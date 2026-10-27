@@ -13,11 +13,13 @@ router = APIRouter(prefix="/products", tags=["products"])
 def get_products(
     category_id: int | None = None, 
     min_price: float | None = None, 
-    max_price: float | None = None, 
+    max_price: float | None = None,
+    in_stock:bool    |None = None,
     db = Depends(get_db)):
     return product_service.list_products(
         db, 
         category_id=category_id,
         min_price=min_price,
         max_price=max_price,
+        in_stock = in_stock,
         )

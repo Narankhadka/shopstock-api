@@ -6,6 +6,7 @@ def list_products(
     category_id: int | None = None,
     min_price:float | None = None,
     max_price: float | None = None,
+    in_stock: bool | None = None,
     ) -> list[dict]:
     
     conditions = ["is_active = 1"]
@@ -22,6 +23,13 @@ def list_products(
     if max_price is not None: 
         conditions.append("price <=?")
         values.append(round(max_price * 100))
+    
+    if in_stock is True: 
+        conditions.append("stock_quantity > 0")
+    elif in_stock is False:
+        conditions.append("stock_quantity = 0")
+        
+        
 
     where = " AND ".join(conditions)
     sql = (
