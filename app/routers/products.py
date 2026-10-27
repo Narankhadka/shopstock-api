@@ -10,5 +10,5 @@ router = APIRouter(prefix="/products", tags=["products"])
 
 
 @router.get("", response_model=list[ProductOut])
-def get_products(db: sqlite3.Connection = Depends(get_db)):
-    return product_service.list_products(db)
+def get_products(category_id: int | None = None, db = Depends(get_db)):
+    return product_service.list_products(db, category_id=category_id)
