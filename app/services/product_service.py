@@ -7,6 +7,8 @@ def list_products(
     min_price:float | None = None,
     max_price: float | None = None,
     in_stock: bool | None = None,
+    search:str     | None = None,
+    
     ) -> list[dict]:
     
     conditions = ["is_active = 1"]
@@ -28,6 +30,16 @@ def list_products(
         conditions.append("stock_quantity > 0")
     elif in_stock is False:
         conditions.append("stock_quantity = 0")
+        
+    if search:
+        escaped_search = (
+            search.replace("\\", "\\\\")
+                  .replace("%", "\\%")
+                  .replace("_", "\\_")
+        )
+
+        conditions.append("name LIKE ? ESCAPE '\\'")
+        values.append(f"%{escaped_search}%")
         
         
 

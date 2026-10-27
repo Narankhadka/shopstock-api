@@ -15,6 +15,7 @@ def get_products(
     min_price: float | None = None, 
     max_price: float | None = None,
     in_stock:bool    |None = None,
+    search:str     | None = None,
     db = Depends(get_db)):
     return product_service.list_products(
         db, 
@@ -22,4 +23,5 @@ def get_products(
         min_price=min_price,
         max_price=max_price,
         in_stock = in_stock,
+        search=search,
         )
