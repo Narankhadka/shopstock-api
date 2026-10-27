@@ -33,3 +33,33 @@ CREATE TABLE IF NOT EXISTS products (
 
 );
 
+
+CREATE TABLE IF NOT EXISTS orders(
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+
+    customer_name TEXT NOT NULL 
+                   CHECK (LENGTH(TRIM(customer_name)) > 0),
+
+    customer_phone TEXT NOT NULL 
+                    CHECK (
+                        LENGTH(customer_phone) = 10
+                        AND (customer_phone LIKE '97%' OR customer_phone LIKE '98%')
+                        AND customer_phone NOT GLOB '*[^0-9]*'
+                    ),
+
+    status TEXT NOT NULL DEFAULT 'pending' 
+                    CHECK (status IN (
+                        'pending',
+                        'confirmed',
+                        'delivered',
+                        'cancelled' )),
+
+    total_amount INTEGER NOT NULL CHECK (total_amount >=0),
+
+    created_at TEXT NOT NULL DEFAULT (datetime('now')),
+
+    updated_at TEXT NOT NULL DEFAULT (datetime('now'))
+
+);
+
+
