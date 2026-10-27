@@ -63,3 +63,21 @@ CREATE TABLE IF NOT EXISTS orders(
 );
 
 
+CREATE TABLE IF NOT EXISTS order_items(
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+
+    order_id INTEGER NOT NULL REFERENCES orders(id),
+
+    product_id INTEGER NOT NULL REFERENCES products(id),
+
+    quantity INTEGER NOT NULL CHECK (quantity > 0 AND quantity <= 100),
+
+    unit_price INTEGER NOT NULL 
+                        CHECK (unit_price > 0 AND unit_price <= 100000000),
+
+    UNIQUE (order_id,product_id)
+
+);
+
+
+
