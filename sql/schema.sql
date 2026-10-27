@@ -81,3 +81,25 @@ CREATE TABLE IF NOT EXISTS order_items(
 
 
 
+CREATE TABLE IF NOT EXISTS stock_movements(
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+
+    product_id INTEGER NOT NULL REFERENCES products(id),
+
+    change INTEGER NOT NULL CHECK (
+        typeof(change) = 'integer'
+        AND change != 0 ),
+
+    reason TEXT NOT NULL CHECK (reason IN (
+        'restock',
+        'damaged',
+        'correction',
+        'order',
+        'order_cancelled')),
+
+    order_id INTEGER REFERENCES orders(id),
+
+    created_at TEXT NOT NULL DEFAULT (datetime('now'))
+);
+
+
