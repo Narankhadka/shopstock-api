@@ -3,8 +3,10 @@ import sqlite3
 from fastapi import Depends, FastAPI
 from fastapi.responses import JSONResponse
 from app.database import get_db
+from app.routers import products
 
 app = FastAPI(title="ShopStock API")
+app.include_router(products.router)
 
 @app.get('/health')
 def health(db: sqlite3.Connection = Depends(get_db)):
