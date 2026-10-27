@@ -17,6 +17,8 @@ def get_products(
     in_stock:bool    |None = None,
     search:str     | None = None,
     include_inactive: bool = False,
+    sort_by: str = "name",
+    order: str = "asc",
     db = Depends(get_db)):
     return product_service.list_products(
         db, 
@@ -26,4 +28,7 @@ def get_products(
         in_stock = in_stock,
         search=search,
         include_inactive=include_inactive,
+        sort_by=sort_by,
+        order=order
+        
         )

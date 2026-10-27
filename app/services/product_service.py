@@ -9,8 +9,22 @@ def list_products(
     in_stock: bool | None = None,
     search:str     | None = None,
     include_inactive: bool = False,
+    sort_by: str = "name",
+    order: str = "asc",
     
     ) -> list[dict]:
+    
+    allowed_sort_columns = {
+    "price": "price",
+    "name": "name",
+    "stock_quantity": "stock_quantity",
+    "created_at": "created_at",
+}
+    if order not in ("asc","desc"):
+        raise ValueError("Invalid order")
+
+    if  sort_by not in allowed_sort_columns:
+        raise ValueError("Invalid sort_by")
     
     conditions = ["1 = 1"]
     if not include_inactive:
@@ -50,8 +64,7 @@ def list_products(
     where = " AND ".join(conditions)
     sql = (
         "SELECT id, sku, name, category_id, price, stock_quantity, is_active "
-        "FROM products WHERE " + where + " ORDER BY id"
-    )
+        "FROM products WHERE " + where + f" ORDER BY {sort_by} {order.upper()}, id ASC" )
     rows = db.execute(sql, values).fetchall()
 
     products = []
