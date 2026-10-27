@@ -8,10 +8,14 @@ def list_products(
     max_price: float | None = None,
     in_stock: bool | None = None,
     search:str     | None = None,
+    include_inactive: bool = False,
     
     ) -> list[dict]:
     
-    conditions = ["is_active = 1"]
+    conditions = ["1 = 1"]
+    if not include_inactive:
+        conditions.append("is_active = 1")
+    
     values = []
 
     if category_id is not None:
