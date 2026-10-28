@@ -1,9 +1,9 @@
 import sqlite3
 
-from fastapi import APIRouter, Depends,HTTPException,Query
+from fastapi import APIRouter, Depends,HTTPException,Query,Path
 from typing import Literal
 from app.database import get_db
-from app.schemas.product import ProductOut
+from app.schemas.product import ProductOut,ProductDetailOut
 from app.services import product_service
 
 
@@ -40,3 +40,26 @@ def get_products(
         order=order
         
         )
+@router.get("/{product_id}", response_model=ProductDetailOut)
+def get_product(product_id: int, db: sqlite3.Connection = Depends(get_db)):
+    product = product_service.get_product_by_id(db, product_id)
+    if product is None:
+        raise HTTPException(
+            status_code=404, detail=f"Product with id {product_id} not found"
+        )
+    return product
+
+
+@router.get("/sku/{sku}", response_model=ProductDetailOut)
+def get_product_sku(
+    sku: str = Path(pattern=r"^[A-Za-z]{3}-[0-9]{4}$"),
+    db: sqlite3.Connection = Depends(get_db),
+):
+    # Wrong format (xyz) -> 422, because the client sent invalid input.
+    # Correct format but no such product -> 404.
+    product = product_service.get_product_by_sku(db, sku)
+    if product is None:
+        raise HTTPException(
+            status_code=404, detail=f"Product with sku {sku.upper()} not found"
+        )
+    return product

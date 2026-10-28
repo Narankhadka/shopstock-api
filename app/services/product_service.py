@@ -81,3 +81,49 @@ def list_products(
         products.append(product)
 
     return products
+
+def get_product_by_id(db: sqlite3.Connection, product_id: int) -> dict | None:
+    row = db.execute(
+        "SELECT p.id, p.sku, p.name, p.category_id, c.name AS category_name, "
+        "p.price, p.stock_quantity, p.is_active "
+        "FROM products p JOIN categories c ON c.id = p.category_id "
+        "WHERE p.id = ?",
+        (product_id,),
+    ).fetchone()
+
+    if row is None:
+        return None
+
+    return {
+        "id": row["id"],
+        "sku": row["sku"],
+        "name": row["name"],
+        "category_id": row["category_id"],
+        "category_name": row["category_name"],
+        "price": row["price"] / 100,
+        "stock_quantity": row["stock_quantity"],
+        "is_active": bool(row["is_active"]),
+    }
+
+def get_product_by_sku(db: sqlite3.Connection, sku: str) -> dict | None:
+    row = db.execute(
+        "SELECT p.id, p.sku, p.name, p.category_id, c.name AS category_name, "
+        "p.price, p.stock_quantity, p.is_active "
+        "FROM products p JOIN categories c ON c.id = p.category_id "
+        "WHERE p.sku = ?",
+        (sku.upper(),),
+    ).fetchone()
+
+    if row is None:
+        return None
+
+    return {
+        "id": row["id"],
+        "sku": row["sku"],
+        "name": row["name"],
+        "category_id": row["category_id"],
+        "category_name": row["category_name"],
+        "price": row["price"] / 100,
+        "stock_quantity": row["stock_quantity"],
+        "is_active": bool(row["is_active"]),
+    }

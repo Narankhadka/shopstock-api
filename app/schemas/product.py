@@ -9,4 +9,7 @@ class ProductOut(BaseModel):
     price: float
     stock_quantity: int
     is_active: bool
+
+class ProductDetailOut(ProductOut):
+    category_name:str
     
