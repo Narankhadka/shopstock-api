@@ -3,7 +3,7 @@ import sqlite3
 from fastapi import APIRouter, Depends,HTTPException,Query,Path
 from typing import Literal
 from app.database import get_db
-from app.schemas.product import ProductOut,ProductDetailOut ,ProductCreate
+from app.schemas.product import ProductOut,ProductDetailOut ,ProductCreate,ProductCreatedOut
 from app.services.product_service import DuplicateSKUError
 from app.services import product_service
 
@@ -22,7 +22,7 @@ def get_products(
     sort_by: Literal["price", "name", "stock_quantity", "created_at"] = "name",
     order: Literal["asc", "desc"] = "asc",
     db = Depends(get_db)):
-    
+
     if min_price is not None and max_price is not None:
         if min_price > max_price:
             raise HTTPException(
@@ -30,7 +30,7 @@ def get_products(
              detail="min_price cannot be greater than max_price" )
 
     return product_service.list_products(
-        db, 
+        db,
         category_id=category_id,
         min_price=min_price,
         max_price=max_price,
@@ -39,7 +39,7 @@ def get_products(
         include_inactive=include_inactive,
         sort_by=sort_by,
         order=order
-        
+
         )
 @router.get("/{product_id}", response_model=ProductDetailOut)
 def get_product(product_id: int, db: sqlite3.Connection = Depends(get_db)):
@@ -65,19 +65,23 @@ def get_product_sku(
         )
     return product
 
-@router.post("", status_code=201)
+@router.post(
+    "",
+    response_model=ProductCreatedOut,
+    status_code=201)
+
 def create_product(
-    data: ProductCreate, 
+    data: ProductCreate,
     db: sqlite3.Connection = Depends(get_db)):
     try:
         return product_service.create_product(db, data)
-    
+
     except DuplicateSKUError as e:
         raise HTTPException(
             status_code=409,
             detail=str(e)
             ) from e
-    except ValueError as e: 
+    except ValueError as e:
         raise HTTPException(
             status_code=404,
             detail=str(e)

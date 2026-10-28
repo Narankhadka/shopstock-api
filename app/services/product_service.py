@@ -16,9 +16,9 @@ def list_products(
     include_inactive: bool = False,
     sort_by: str = "name",
     order: str = "asc",
-    
+
     ) -> list[dict]:
-    
+
     allowed_sort_columns = {
     "price": "price",
     "name": "name",
@@ -30,30 +30,30 @@ def list_products(
 
     if  sort_by not in allowed_sort_columns:
         raise ValueError("Invalid sort_by")
-    
+
     conditions = ["1 = 1"]
     if not include_inactive:
         conditions.append("is_active = 1")
-    
+
     values = []
 
     if category_id is not None:
         conditions.append("category_id = ?")
         values.append(category_id)
-    
-    if min_price is not None: 
+
+    if min_price is not None:
         conditions.append("price >=?")
         values.append(round(min_price * 100))
-    
-    if max_price is not None: 
+
+    if max_price is not None:
         conditions.append("price <=?")
         values.append(round(max_price * 100))
-    
-    if in_stock is True: 
+
+    if in_stock is True:
         conditions.append("stock_quantity > 0")
     elif in_stock is False:
         conditions.append("stock_quantity = 0")
-        
+
     if search:
         escaped_search = (
             search.replace("\\", "\\\\")
@@ -63,8 +63,8 @@ def list_products(
 
         conditions.append("name LIKE ? ESCAPE '\\'")
         values.append(f"%{escaped_search}%")
-        
-        
+
+
 
     where = " AND ".join(conditions)
     sql = (
@@ -90,7 +90,8 @@ def list_products(
 def get_product_by_id(db: sqlite3.Connection, product_id: int) -> dict | None:
     row = db.execute(
         "SELECT p.id, p.sku, p.name, p.category_id, c.name AS category_name, "
-        "p.price, p.stock_quantity, p.is_active "
+        "p.price, p.stock_quantity, p.is_active, "
+        "p.created_at,p.updated_at "
         "FROM products p JOIN categories c ON c.id = p.category_id "
         "WHERE p.id = ?",
         (product_id,),
@@ -108,6 +109,8 @@ def get_product_by_id(db: sqlite3.Connection, product_id: int) -> dict | None:
         "price": row["price"] / 100,
         "stock_quantity": row["stock_quantity"],
         "is_active": bool(row["is_active"]),
+        "created_at": row["created_at"],
+        "updated_at": row["updated_at"],
     }
 
 def get_product_by_sku(db: sqlite3.Connection, sku: str) -> dict | None:
@@ -143,7 +146,7 @@ def category_exists(db: sqlite3.Connection, category_id: int) -> bool:
 
 
 
-    
+
 def create_product(
     db: sqlite3.Connection,
     data: ProductCreate
