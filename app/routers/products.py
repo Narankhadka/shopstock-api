@@ -9,6 +9,7 @@ from app.schemas.product import (
     ProductCreatedOut,
     ProductDetailOut,
     ProductOut,
+    PaginatedProductsOut
 )
 from app.services import product_service
 from app.services.product_service import DuplicateSKUError
@@ -16,7 +17,7 @@ from app.services.product_service import DuplicateSKUError
 router = APIRouter(prefix="/products", tags=["products"])
 
 
-@router.get("", response_model=list[ProductOut])
+@router.get("", response_model=PaginatedProductsOut)
 def get_products(
     db: Annotated[sqlite3.Connection, Depends(get_db)],
     category_id: int | None = Query(default=None, ge=0),
@@ -27,6 +28,8 @@ def get_products(
     include_inactive: bool = False,
     sort_by: Literal["price", "name", "stock_quantity", "created_at"] = "name",
     order: Literal["asc", "desc"] = "asc",
+    page: int =Query(default=1,ge=1),
+    page_size: int =Query(default=10,ge=1,le=50),
    ):
 
     if (
@@ -47,7 +50,9 @@ def get_products(
         search=search,
         include_inactive=include_inactive,
         sort_by=sort_by,
-        order=order
+        order=order,
+        page=page,
+        page_size=page_size,
 
         )
 @router.get("/{product_id}", response_model=ProductDetailOut)

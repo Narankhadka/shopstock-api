@@ -37,3 +37,11 @@ class ProductCreate(BaseModel):
 class ProductCreatedOut(ProductOut):
     created_at: datetime
     updated_at:datetime
+
+class PaginatedProductsOut(BaseModel):
+    items:list[ProductOut]
+    total: int
+    page: int 
+    page_size: int 
+    total_pages: int 
+    

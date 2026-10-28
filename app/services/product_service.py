@@ -16,8 +16,12 @@ def list_products(
     include_inactive: bool = False,
     sort_by: str = "name",
     order: str = "asc",
+    page: int = 1,
+    page_size: int = 10,
 
-    ) -> list[dict]:
+    ) -> dict:
+    
+    offset = (page -1 ) * page_size
 
     allowed_sort_columns = {
     "price": "price",
@@ -67,9 +71,16 @@ def list_products(
 
 
     where = " AND ".join(conditions)
+    count_sql = "SELECT COUNT(*) FROM products WHERE " + where
+    total = db.execute(count_sql,values).fetchone()[0]
+    total_pages = (total + page_size - 1) // page_size
     sql = (
         "SELECT id, sku, name, category_id, price, stock_quantity, is_active "
-        "FROM products WHERE " + where + f" ORDER BY {sort_by} {order.upper()}, id ASC" )
+        "FROM products WHERE " + where
+        + f" ORDER BY {sort_by} {order.upper()}, id ASC" 
+        + " LIMIT ? OFFSET ?"
+    )
+    values.extend([page_size,offset])
     rows = db.execute(sql, values).fetchall()
 
     products = []
@@ -85,7 +96,13 @@ def list_products(
         }
         products.append(product)
 
-    return products
+    return {
+        "items": products,
+        "total": total,
+        "page": page,
+        "page_size": page_size,
+        "total_pages": total_pages,
+}
 
 def get_product_by_id(db: sqlite3.Connection, product_id: int) -> dict | None:
     row = db.execute(
