@@ -3,7 +3,8 @@ import sqlite3
 from fastapi import APIRouter, Depends,HTTPException,Query,Path
 from typing import Literal
 from app.database import get_db
-from app.schemas.product import ProductOut,ProductDetailOut
+from app.schemas.product import ProductOut,ProductDetailOut ,ProductCreate
+from app.services.product_service import DuplicateSKUError
 from app.services import product_service
 
 
@@ -63,3 +64,21 @@ def get_product_sku(
             status_code=404, detail=f"Product with sku {sku.upper()} not found"
         )
     return product
+
+@router.post("", status_code=201)
+def create_product(
+    data: ProductCreate, 
+    db: sqlite3.Connection = Depends(get_db)):
+    try:
+        return product_service.create_product(db, data)
+    
+    except DuplicateSKUError as e:
+        raise HTTPException(
+            status_code=409,
+            detail=str(e)
+            ) from e
+    except ValueError as e: 
+        raise HTTPException(
+            status_code=404,
+            detail=str(e)
+        ) from e

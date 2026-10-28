@@ -1,5 +1,10 @@
 import sqlite3
+from app.schemas.product import ProductCreate
 
+
+
+class DuplicateSKUError(Exception):
+    pass
 
 def list_products(
     db: sqlite3.Connection,
@@ -127,3 +132,61 @@ def get_product_by_sku(db: sqlite3.Connection, sku: str) -> dict | None:
         "stock_quantity": row["stock_quantity"],
         "is_active": bool(row["is_active"]),
     }
+
+def category_exists(db: sqlite3.Connection, category_id: int) -> bool:
+    row = db.execute(
+        "SELECT 1 FROM categories WHERE id = ?",
+        (category_id,)
+    ).fetchone()
+
+    return row is not None
+
+
+
+    
+def create_product(
+    db: sqlite3.Connection,
+    data: ProductCreate
+) -> dict:
+
+    if not category_exists(db, data.category_id):
+        raise ValueError("Category does not exist")
+
+    price_paisa = int(data.price * 100)
+
+    try:
+        cursor = db.execute(
+            """
+            INSERT INTO products
+                (sku, name, category_id, price, stock_quantity)
+            VALUES (?, ?, ?, ?, ?)
+            """,
+            (
+                data.sku,
+                data.name,
+                data.category_id,
+                price_paisa,
+                data.stock_quantity,
+            ),
+        )
+
+        product_id = cursor.lastrowid
+        if product_id is None:
+            raise RuntimeError("Failed to retrieve created product ID")
+        db.commit()
+
+    except sqlite3.IntegrityError as e:
+        db.rollback()
+        if "UNIQUE constraint failed: products.sku" in str(e):
+            raise DuplicateSKUError(
+                f"Product with SKU {data.sku} already exists"
+            ) from e
+        raise
+
+
+    product = get_product_by_id(db, product_id)
+
+    if product is None:
+        raise RuntimeError("Created product could not be retrieved")
+
+    return product
