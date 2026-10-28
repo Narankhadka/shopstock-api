@@ -1,18 +1,24 @@
 import sqlite3
+from typing import Annotated, Literal
 
-from fastapi import APIRouter, Depends,HTTPException,Query,Path
-from typing import Literal
+from fastapi import APIRouter, Depends, HTTPException, Path, Query
+
 from app.database import get_db
-from app.schemas.product import ProductOut,ProductDetailOut ,ProductCreate,ProductCreatedOut
-from app.services.product_service import DuplicateSKUError
+from app.schemas.product import (
+    ProductCreate,
+    ProductCreatedOut,
+    ProductDetailOut,
+    ProductOut,
+)
 from app.services import product_service
-
+from app.services.product_service import DuplicateSKUError
 
 router = APIRouter(prefix="/products", tags=["products"])
 
 
 @router.get("", response_model=list[ProductOut])
 def get_products(
+    db: Annotated[sqlite3.Connection, Depends(get_db)],
     category_id: int | None = Query(default=None, ge=0),
     min_price: float | None = Query(default=None, ge=0),
     max_price: float | None = Query(default=None, ge=0),
@@ -21,10 +27,13 @@ def get_products(
     include_inactive: bool = False,
     sort_by: Literal["price", "name", "stock_quantity", "created_at"] = "name",
     order: Literal["asc", "desc"] = "asc",
-    db = Depends(get_db)):
+   ):
 
-    if min_price is not None and max_price is not None:
-        if min_price > max_price:
+    if (
+        min_price is not None
+        and max_price is not None
+        and min_price > max_price
+        ):
             raise HTTPException(
              status_code=422,
              detail="min_price cannot be greater than max_price" )
@@ -42,7 +51,7 @@ def get_products(
 
         )
 @router.get("/{product_id}", response_model=ProductDetailOut)
-def get_product(product_id: int, db: sqlite3.Connection = Depends(get_db)):
+def get_product(product_id: int, db: Annotated[sqlite3.Connection, Depends(get_db)]):
     product = product_service.get_product_by_id(db, product_id)
     if product is None:
         raise HTTPException(
@@ -53,8 +62,8 @@ def get_product(product_id: int, db: sqlite3.Connection = Depends(get_db)):
 
 @router.get("/sku/{sku}", response_model=ProductDetailOut)
 def get_product_sku(
+    db: Annotated[sqlite3.Connection, Depends(get_db)],
     sku: str = Path(pattern=r"^[A-Za-z]{3}-[0-9]{4}$"),
-    db: sqlite3.Connection = Depends(get_db),
 ):
     # Wrong format (xyz) -> 422, because the client sent invalid input.
     # Correct format but no such product -> 404.
@@ -72,7 +81,8 @@ def get_product_sku(
 
 def create_product(
     data: ProductCreate,
-    db: sqlite3.Connection = Depends(get_db)):
+    db: Annotated[sqlite3.Connection, Depends(get_db)],
+):
     try:
         return product_service.create_product(db, data)
 

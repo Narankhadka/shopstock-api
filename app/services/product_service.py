@@ -1,6 +1,6 @@
 import sqlite3
-from app.schemas.product import ProductCreate
 
+from app.schemas.product import ProductCreate
 
 
 class DuplicateSKUError(Exception):
