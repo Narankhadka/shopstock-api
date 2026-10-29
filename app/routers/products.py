@@ -11,7 +11,12 @@ from app.schemas.product import (
     ProductDetailOut,
     ProductUpdate,
 )
-from app.services import product_service
+from app.schemas.stock import (
+    PaginatedStockMovementsOut,
+    StockAdjustmentIn,
+    StockAdjustmentOut,
+)
+from app.services import product_service, stock_service
 from app.services.product_service import DuplicateSKUError
 
 router = APIRouter(prefix="/products", tags=["products"])
@@ -101,3 +106,47 @@ def update_product(
         return product_service.update_product(db, product_id, data)
     except ValueError as e:
         raise HTTPException(status_code=404, detail=str(e)) from e
+
+@router.post(
+    "/{product_id}/stock-adjustments",
+    response_model=StockAdjustmentOut,
+    status_code=201,
+)
+def create_stock_adjustment(
+    product_id: int,
+    data: StockAdjustmentIn,
+    db:DBSession
+):
+    try:
+        return stock_service.adjust_stock(db,product_id,data)
+    except ValueError as e:
+        message=str(e)
+
+        if message=="Product Not found":
+            status_code=404
+        else:
+            status_code=409
+        raise HTTPException(
+            status_code=status_code,
+            detail=message
+        )from e
+
+@router.get(
+    "{/product_id}/stock-movements",
+    response_model=PaginatedStockMovementsOut,
+)
+def get_stock_movements(
+    product_id: int,
+    db: DBSession,
+    page: int= Query(default=1, ge=1),
+    page_size: int = Query(default=10,ge=1,le=50)
+):
+    try:
+        return stock_service.list_stock_movements(
+            db,product_id,page,page_size
+        )
+    except ValueError as e:
+        raise HTTPException(
+            status_code=404,
+            detail=str(e),
+        ) from e
