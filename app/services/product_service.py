@@ -1,38 +1,38 @@
 import sqlite3
 
-from app.schemas.product import ProductCreate
+from app.schemas.product import ProductCreate, ProductUpdate
 
 
 class DuplicateSKUError(Exception):
     pass
 
+
 def list_products(
     db: sqlite3.Connection,
     category_id: int | None = None,
-    min_price:float | None = None,
+    min_price: float | None = None,
     max_price: float | None = None,
     in_stock: bool | None = None,
-    search:str     | None = None,
+    search: str | None = None,
     include_inactive: bool = False,
     sort_by: str = "name",
     order: str = "asc",
     page: int = 1,
     page_size: int = 10,
+) -> dict:
 
-    ) -> dict:
-    
-    offset = (page -1 ) * page_size
+    offset = (page - 1) * page_size
 
     allowed_sort_columns = {
-    "price": "price",
-    "name": "name",
-    "stock_quantity": "stock_quantity",
-    "created_at": "created_at",
-}
-    if order not in ("asc","desc"):
+        "price": "price",
+        "name": "name",
+        "stock_quantity": "stock_quantity",
+        "created_at": "created_at",
+    }
+    if order not in ("asc", "desc"):
         raise ValueError("Invalid order")
 
-    if  sort_by not in allowed_sort_columns:
+    if sort_by not in allowed_sort_columns:
         raise ValueError("Invalid sort_by")
 
     conditions = ["1 = 1"]
@@ -60,27 +60,24 @@ def list_products(
 
     if search:
         escaped_search = (
-            search.replace("\\", "\\\\")
-                  .replace("%", "\\%")
-                  .replace("_", "\\_")
+            search.replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_")
         )
 
         conditions.append("name LIKE ? ESCAPE '\\'")
         values.append(f"%{escaped_search}%")
 
-
-
     where = " AND ".join(conditions)
     count_sql = "SELECT COUNT(*) FROM products WHERE " + where
-    total = db.execute(count_sql,values).fetchone()[0]
+    total = db.execute(count_sql, values).fetchone()[0]
     total_pages = (total + page_size - 1) // page_size
     sql = (
         "SELECT id, sku, name, category_id, price, stock_quantity, is_active "
-        "FROM products WHERE " + where
-        + f" ORDER BY {sort_by} {order.upper()}, id ASC" 
+        "FROM products WHERE "
+        + where
+        + f" ORDER BY {sort_by} {order.upper()}, id ASC"
         + " LIMIT ? OFFSET ?"
     )
-    values.extend([page_size,offset])
+    values.extend([page_size, offset])
     rows = db.execute(sql, values).fetchall()
 
     products = []
@@ -102,7 +99,8 @@ def list_products(
         "page": page,
         "page_size": page_size,
         "total_pages": total_pages,
-}
+    }
+
 
 def get_product_by_id(db: sqlite3.Connection, product_id: int) -> dict | None:
     row = db.execute(
@@ -130,6 +128,7 @@ def get_product_by_id(db: sqlite3.Connection, product_id: int) -> dict | None:
         "updated_at": row["updated_at"],
     }
 
+
 def get_product_by_sku(db: sqlite3.Connection, sku: str) -> dict | None:
     row = db.execute(
         "SELECT p.id, p.sku, p.name, p.category_id, c.name AS category_name, "
@@ -153,21 +152,14 @@ def get_product_by_sku(db: sqlite3.Connection, sku: str) -> dict | None:
         "is_active": bool(row["is_active"]),
     }
 
+
 def category_exists(db: sqlite3.Connection, category_id: int) -> bool:
-    row = db.execute(
-        "SELECT 1 FROM categories WHERE id = ?",
-        (category_id,)
-    ).fetchone()
+    row = db.execute("SELECT 1 FROM categories WHERE id = ?", (category_id,)).fetchone()
 
     return row is not None
 
 
-
-
-def create_product(
-    db: sqlite3.Connection,
-    data: ProductCreate
-) -> dict:
+def create_product(db: sqlite3.Connection, data: ProductCreate) -> dict:
 
     if not category_exists(db, data.category_id):
         raise ValueError("Category does not exist")
@@ -203,10 +195,59 @@ def create_product(
             ) from e
         raise
 
-
     product = get_product_by_id(db, product_id)
 
     if product is None:
         raise RuntimeError("Created product could not be retrieved")
 
     return product
+
+
+def update_product(
+    db: sqlite3.Connection,
+    product_id: int,
+    data: ProductUpdate,
+) -> dict:
+
+    product = get_product_by_id(db, product_id)
+
+    if product is None:
+        raise ValueError("Product not found")
+
+    update_data = data.model_dump(exclude_unset=True)
+    if "category_id" in update_data and not category_exists(
+        db, update_data["category_id"]
+    ):
+        raise ValueError("Category does not exist")
+
+    if "price" in update_data:
+        update_data["price"] = int(update_data["price"] * 100)
+
+    set_clauses = []
+
+    for field in update_data:
+        set_clauses.append(f"{field}=?")
+
+    set_sql = ", ".join(set_clauses)
+
+    values = list(update_data.values())
+    values.append(product_id)
+
+    sql = f"""
+    UPDATE products
+    SET {set_sql}, updated_at = CURRENT_TIMESTAMP
+    WHERE id = ?
+"""
+    try:
+        db.execute(sql, values)
+        db.commit()
+    except sqlite3.IntegrityError:
+        db.rollback()
+        raise
+
+    updated_product = get_product_by_id(db, product_id)
+
+    if updated_product is None:
+        raise RuntimeError("Updated product could not be retrieved")
+
+    return updated_product

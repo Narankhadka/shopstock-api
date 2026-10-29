@@ -7,9 +7,10 @@ from app.database import get_db
 from app.schemas.category import CategoryOut
 from app.services import category_service
 
-router = APIRouter(prefix="/categories",tags=["categories"])
+router = APIRouter(prefix="/categories", tags=["categories"])
 
-@router.get("",response_model=list[CategoryOut])
+
+@router.get("", response_model=list[CategoryOut])
 def get_categories(
     db: Annotated[sqlite3.Connection, Depends(get_db)],
 ):

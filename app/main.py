@@ -11,13 +11,14 @@ app = FastAPI(title="ShopStock API")
 app.include_router(products.router)
 app.include_router(categories.router)
 
-@app.get('/health')
+
+@app.get("/health")
 def health(db: Annotated[sqlite3.Connection, Depends(get_db)]):
     try:
         db.execute("SELECT * FROM products LIMIT 1")
     except sqlite3.Error:
         return JSONResponse(
             status_code=503,
-            content={'status':'error','database':'unavailable'},
+            content={"status": "error", "database": "unavailable"},
         )
-    return {'status':'ok','database':'connected'}
+    return {"status": "ok", "database": "connected"}
