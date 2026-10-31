@@ -106,7 +106,6 @@ def create_order(
                 raise ValueError(
                     f"Stock update failed for product {line['product_id']}"
                 )
-
             db.execute(
                 """
                 INSERT INTO stock_movements
