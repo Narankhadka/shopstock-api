@@ -5,11 +5,12 @@ from fastapi import Depends, FastAPI
 from fastapi.responses import JSONResponse
 
 from app.database import get_db
-from app.routers import categories, products
+from app.routers import categories, orders, products
 
 app = FastAPI(title="ShopStock API")
 app.include_router(products.router)
 app.include_router(categories.router)
+app.include_router(orders.router)
 
 
 @app.get("/health")
