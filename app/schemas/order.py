@@ -1,3 +1,4 @@
+from datetime import datetime
 from typing import Annotated
 
 from pydantic import BaseModel, BeforeValidator, ConfigDict, Field, model_validator
@@ -27,3 +28,20 @@ class OrderCreate(BaseModel):
             raise ValueError("Duplicate products are not allowed")
 
         return self
+
+
+class OrderItemOut(BaseModel):
+    product_id: int
+    quantity: int
+    unit_price: float
+    line_total: float
+
+
+class OrderOut(BaseModel):
+    id: int
+    customer_name: str
+    customer_phone: str
+    status: str
+    total_amount: float
+    items: list[OrderItemOut]
+    created_at: datetime
