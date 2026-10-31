@@ -36,3 +36,13 @@ Now, it returns a JSON object containing:
 - `page`: Current page number
 - `page_size`: Number of products requested per page
 - `total_pages`: Total number of pages
+
+## Timestamp Convention
+
+All database timestamps are stored in UTC using SQLite's
+`datetime('now')`. API timestamps currently do not include
+an explicit timezone offset.
+
+Nepal Standard Time (NPT) is UTC+05:45.
+Clients should treat database timestamps as UTC before
+converting them to the user's local timezone.
