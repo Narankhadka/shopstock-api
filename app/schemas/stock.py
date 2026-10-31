@@ -30,8 +30,9 @@ class StockMovementOut(BaseModel):
     product_id: int
     change: int
     reason: str
-    order_id:int | None
+    order_id: int | None
     created_at: datetime
+
 
 class PaginatedStockMovementsOut(BaseModel):
     items: list[StockMovementOut]

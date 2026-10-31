@@ -107,44 +107,37 @@ def update_product(
     except ValueError as e:
         raise HTTPException(status_code=404, detail=str(e)) from e
 
+
 @router.post(
     "/{product_id}/stock-adjustments",
     response_model=StockAdjustmentOut,
     status_code=201,
 )
-def create_stock_adjustment(
-    product_id: int,
-    data: StockAdjustmentIn,
-    db:DBSession
-):
+def create_stock_adjustment(product_id: int, data: StockAdjustmentIn, db: DBSession):
     try:
-        return stock_service.adjust_stock(db,product_id,data)
+        return stock_service.adjust_stock(db, product_id, data)
     except ValueError as e:
-        message=str(e)
+        message = str(e)
 
-        if message=="Product Not found":
-            status_code=404
+        if message == "Product not found":
+            status_code = 404
         else:
-            status_code=409
-        raise HTTPException(
-            status_code=status_code,
-            detail=message
-        )from e
+            status_code = 409
+        raise HTTPException(status_code=status_code, detail=message) from e
+
 
 @router.get(
-    "{/product_id}/stock-movements",
+    "/{product_id}/stock-movements",
     response_model=PaginatedStockMovementsOut,
 )
 def get_stock_movements(
     product_id: int,
     db: DBSession,
-    page: int= Query(default=1, ge=1),
-    page_size: int = Query(default=10,ge=1,le=50)
+    page: int = Query(default=1, ge=1),
+    page_size: int = Query(default=10, ge=1, le=50),
 ):
     try:
-        return stock_service.list_stock_movements(
-            db,product_id,page,page_size
-        )
+        return stock_service.list_stock_movements(db, product_id, page, page_size)
     except ValueError as e:
         raise HTTPException(
             status_code=404,
