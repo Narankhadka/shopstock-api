@@ -1,7 +1,10 @@
-from fastapi import APIRouter, HTTPException, Path
+from datetime import date
+from typing import Literal
+
+from fastapi import APIRouter, HTTPException, Path, Query
 
 from app.database import DBSession
-from app.schemas.order import OrderCreate, OrderDetailOut, OrderOut
+from app.schemas.order import OrderCreate, OrderDetailOut, OrderOut, PaginatedOrdersOut
 from app.services import order_service
 
 router = APIRouter(prefix="/orders", tags=["Orders"])
@@ -28,3 +31,28 @@ def get_order_by_id(db: DBSession, order_id: int = Path(gt=0)):
         return order_service.get_order_by_id(db, order_id)
     except ValueError as e:
         raise HTTPException(status_code=404, detail=str(e)) from e
+
+
+@router.get("", response_model=PaginatedOrdersOut)
+def list_orders(
+    db: DBSession,
+    status: Literal["pending", "confirmed", "delivered", "cancelled"] | None = None,
+    customer_phone: str | None = None,
+    date_from: date | None = None,
+    date_to: date | None = None,
+    page: int = Query(default=1, ge=1),
+    page_size: int = Query(default=10, ge=1, le=50),
+):
+    if date_from is not None and date_to is not None and date_from > date_to:
+        raise HTTPException(
+            status_code=422, detail="date_from cannot be greater than date_to"
+        )
+    return order_service.list_orders(
+        db=db,
+        status=status,
+        customer_phone=customer_phone,
+        date_from=str(date_from) if date_from is not None else None,
+        date_to=str(date_to) if date_to is not None else None,
+        page=page,
+        page_size=page_size,
+    )

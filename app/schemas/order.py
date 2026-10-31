@@ -59,3 +59,21 @@ class OrderDetailOut(BaseModel):
     total_amount: float
     items: list[OrderItemDetailOut]
     created_at: datetime
+
+
+class OrderSummaryOut(BaseModel):
+    id: int
+    customer_name: str
+    customer_phone: str
+    status: str
+    total_amount: float
+    item_count: int
+    created_at: datetime
+
+
+class PaginatedOrdersOut(BaseModel):
+    items: list[OrderSummaryOut]
+    total: int
+    page: int
+    page_size: int
+    total_pages: int
