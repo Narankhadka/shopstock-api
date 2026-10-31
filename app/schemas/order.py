@@ -45,3 +45,17 @@ class OrderOut(BaseModel):
     total_amount: float
     items: list[OrderItemOut]
     created_at: datetime
+
+
+class OrderItemDetailOut(OrderItemOut):
+    product_name: str
+
+
+class OrderDetailOut(BaseModel):
+    id: int
+    customer_name: str
+    customer_phone: str
+    status: str
+    total_amount: float
+    items: list[OrderItemDetailOut]
+    created_at: datetime

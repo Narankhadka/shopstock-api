@@ -159,3 +159,57 @@ def create_order(
         ],
         "created_at": created_at,
     }
+
+
+def get_order_by_id(
+    db: sqlite3.Connection,
+    order_id: int,
+) -> dict:
+    order = db.execute(
+        """
+        SELECT id, customer_name, customer_phone,
+               status, total_amount, created_at
+        FROM orders
+        WHERE id = ?
+        """,
+        (order_id,),
+    ).fetchone()
+
+    if order is None:
+        raise ValueError("Order not found")
+    items = db.execute(
+        """
+    SELECT
+        oi.product_id,
+        p.name AS product_name,
+        oi.quantity,
+        oi.unit_price,
+        oi.quantity * oi.unit_price AS line_total
+    FROM order_items AS oi
+    JOIN products AS p ON oi.product_id = p.id
+    WHERE oi.order_id = ?
+    ORDER BY oi.id ASC
+    """,
+        (order_id,),
+    ).fetchall()
+    order_items = []
+
+    for item in items:
+        order_items.append(
+            {
+                "product_id": item["product_id"],
+                "product_name": item["product_name"],
+                "quantity": item["quantity"],
+                "unit_price": item["unit_price"] / 100,
+                "line_total": item["line_total"] / 100,
+            }
+        )
+        return {
+            "id": order["id"],
+            "customer_name": order["customer_name"],
+            "customer_phone": order["customer_phone"],
+            "status": order["status"],
+            "total_amount": order["total_amount"] / 100,
+            "items": order_items,
+            "created_at": order["created_at"],
+        }
