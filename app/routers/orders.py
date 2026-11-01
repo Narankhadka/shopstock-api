@@ -4,7 +4,13 @@ from typing import Literal
 from fastapi import APIRouter, HTTPException, Path, Query
 
 from app.database import DBSession
-from app.schemas.order import OrderCreate, OrderDetailOut, OrderOut, PaginatedOrdersOut
+from app.schemas.order import (
+    OrderCreate,
+    OrderDetailOut,
+    OrderOut,
+    OrderStatusUpdate,
+    PaginatedOrdersOut,
+)
 from app.services import order_service
 
 router = APIRouter(prefix="/orders", tags=["Orders"])
@@ -56,3 +62,35 @@ def list_orders(
         page=page,
         page_size=page_size,
     )
+
+
+@router.patch(
+    "/{order_id}/status",
+    response_model=OrderDetailOut,
+    status_code=200,
+)
+def update_order_status(
+    data: OrderStatusUpdate,
+    db: DBSession,
+    order_id: int = Path(gt=0),
+):
+    try:
+        return order_service.update_order_status(
+            db=db,
+            order_id=order_id,
+            data=data,
+        )
+
+    except ValueError as exc:
+        message = str(exc)
+
+        if message == "Order not found":
+            raise HTTPException(
+                status_code=404,
+                detail=message,
+            ) from exc
+
+        raise HTTPException(
+            status_code=409,
+            detail=message,
+        ) from exc
