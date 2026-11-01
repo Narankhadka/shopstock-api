@@ -1,6 +1,13 @@
 import sqlite3
 
-from app.schemas.order import OrderCreate
+from app.schemas.order import OrderCreate, OrderStatusUpdate
+
+ALLOWED_TRANSITIONS = {
+    "pending": {"confirmed", "cancelled"},
+    "confirmed": {"delivered", "cancelled"},
+    "delivered": set(),
+    "cancelled": set(),
+}
 
 
 def create_order(
@@ -204,15 +211,15 @@ def get_order_by_id(
                 "line_total": item["line_total"] / 100,
             }
         )
-        return {
-            "id": order["id"],
-            "customer_name": order["customer_name"],
-            "customer_phone": order["customer_phone"],
-            "status": order["status"],
-            "total_amount": order["total_amount"] / 100,
-            "items": order_items,
-            "created_at": order["created_at"],
-        }
+    return {
+        "id": order["id"],
+        "customer_name": order["customer_name"],
+        "customer_phone": order["customer_phone"],
+        "status": order["status"],
+        "total_amount": order["total_amount"] / 100,
+        "items": order_items,
+        "created_at": order["created_at"],
+    }
 
 
 def list_orders(
@@ -295,3 +302,103 @@ def list_orders(
         "page_size": page_size,
         "total_pages": total_pages,
     }
+
+
+def update_order_status(
+    db: sqlite3.Connection,
+    order_id: int,
+    data: OrderStatusUpdate,
+) -> dict:
+    try:
+        db.execute("BEGIN IMMEDIATE")
+
+        # 1. Fetch the order's current status
+        order = db.execute(
+            """
+            SELECT id, status
+            FROM orders
+            WHERE id = ?
+            """,
+            (order_id,),
+        ).fetchone()
+
+        if order is None:
+            raise ValueError("Order not found")
+
+        # 2. Validate the requested status transition
+        current_status = order["status"]
+
+        if data.status not in ALLOWED_TRANSITIONS[current_status]:
+            raise ValueError(
+                f"Invalid status transition from {current_status} to {data.status}"
+            )
+
+        # 3. Update order status and timestamp
+        cursor = db.execute(
+            """
+            UPDATE orders
+            SET status = ?,
+                updated_at = CURRENT_TIMESTAMP
+            WHERE id = ?
+            """,
+            (data.status, order_id),
+        )
+
+        if cursor.rowcount != 1:
+            raise RuntimeError("Failed to update order status")
+
+        # 4. Restore stock if the order is cancelled
+        if data.status == "cancelled":
+            items = db.execute(
+                """
+                SELECT product_id, quantity
+                FROM order_items
+                WHERE order_id = ?
+                """,
+                (order_id,),
+            ).fetchall()
+
+            for item in items:
+                update_cursor = db.execute(
+                    """
+                    UPDATE products
+                    SET stock_quantity = stock_quantity + ?,
+                        updated_at = CURRENT_TIMESTAMP
+                    WHERE id = ?
+                    """,
+                    (
+                        item["quantity"],
+                        item["product_id"],
+                    ),
+                )
+
+                if update_cursor.rowcount != 1:
+                    raise RuntimeError(
+                        f"Stock restoration failed for product {item['product_id']}"
+                    )
+
+                # 5. Record the stock restoration
+                db.execute(
+                    """
+                    INSERT INTO stock_movements
+                        (product_id, change, reason, order_id)
+                    VALUES (?, ?, 'order_cancelled', ?)
+                    """,
+                    (
+                        item["product_id"],
+                        item["quantity"],
+                        order_id,
+                    ),
+                )
+
+        # 6. Prepare updated order details
+        updated_order = get_order_by_id(db, order_id)
+
+        # 7. Commit all changes together
+        db.commit()
+
+    except Exception:
+        db.rollback()
+        raise
+
+    return updated_order
