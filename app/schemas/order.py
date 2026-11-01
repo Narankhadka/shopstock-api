@@ -1,5 +1,5 @@
 from datetime import datetime
-from typing import Annotated
+from typing import Annotated, Literal
 
 from pydantic import BaseModel, BeforeValidator, ConfigDict, Field, model_validator
 
@@ -77,3 +77,8 @@ class PaginatedOrdersOut(BaseModel):
     page: int
     page_size: int
     total_pages: int
+
+
+class OrderStatusUpdate(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    status: Literal["pending", "confirmed", "delivered", "cancelled"]
