@@ -327,8 +327,8 @@ def restore_product(
         if product is None:
             raise ValueError("Product not found")
 
-        if not product["is_active"]:
-            raise ValueError("Product is already inactive")
+        if product["is_active"]:
+            raise ValueError("Product is already active")
         cursor = db.execute(
             """
             UPDATE products
