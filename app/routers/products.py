@@ -143,3 +143,55 @@ def get_stock_movements(
             status_code=404,
             detail=str(e),
         ) from e
+
+
+@router.delete(
+    "/{product_id}",
+    status_code=204,
+)
+def deactivate_product(
+    db: DBSession,
+    product_id: int = Path(gt=0),
+) -> None:
+    try:
+        product_service.deactivate_product(db, product_id)
+
+    except ValueError as exc:
+        message = str(exc)
+
+        if message == "Product not found":
+            raise HTTPException(
+                status_code=404,
+                detail=message,
+            ) from exc
+
+        raise HTTPException(
+            status_code=409,
+            detail=message,
+        ) from exc
+
+
+@router.post(
+    "/{product_id}/restore",
+    status_code=204,
+)
+def restore_product(
+    db: DBSession,
+    product_id: int = Path(gt=0),
+) -> None:
+    try:
+        product_service.restore_product(db, product_id)
+
+    except ValueError as exc:
+        message = str(exc)
+
+        if message == "Product not found":
+            raise HTTPException(
+                status_code=404,
+                detail=message,
+            ) from exc
+
+        raise HTTPException(
+            status_code=409,
+            detail=message,
+        ) from exc
