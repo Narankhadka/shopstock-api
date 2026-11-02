@@ -251,3 +251,97 @@ def update_product(
         raise RuntimeError("Updated product could not be retrieved")
 
     return updated_product
+
+
+def deactivate_product(
+    db: sqlite3.Connection,
+    product_id: int,
+) -> None:
+    try:
+        db.execute("BEGIN IMMEDIATE")
+
+        product = db.execute(
+            """
+            SELECT id, is_active
+            FROM products
+            WHERE id = ?
+            """,
+            (product_id,),
+        ).fetchone()
+
+        if product is None:
+            raise ValueError("Product not found")
+
+        if not product["is_active"]:
+            raise ValueError("Product is already inactive")
+
+        open_orders = db.execute(
+            """
+            SELECT COUNT(DISTINCT o.id)
+            FROM orders AS o
+            JOIN order_items AS oi ON oi.order_id = o.id
+            WHERE oi.product_id = ?
+              AND o.status IN ('pending', 'confirmed')
+            """,
+            (product_id,),
+        ).fetchone()[0]
+
+        if open_orders > 0:
+            raise ValueError(
+                f"Cannot deactivate product: {open_orders} open order(s) blocking"
+            )
+
+        db.execute(
+            """
+            UPDATE products
+            SET is_active = 0,
+                updated_at = CURRENT_TIMESTAMP
+            WHERE id = ?
+            """,
+            (product_id,),
+        )
+
+        db.commit()
+
+    except Exception:
+        db.rollback()
+        raise
+
+
+def restore_product(
+    db: sqlite3.Connection,
+    product_id: int,
+) -> None:
+    try:
+        db.execute("BEGIN IMMEDIATE")
+
+        product = db.execute(
+            """
+            SELECT id, is_active
+            FROM products
+            WHERE id = ?
+            """,
+            (product_id,),
+        ).fetchone()
+
+        if product is None:
+            raise ValueError("Product not found")
+
+        if not product["is_active"]:
+            raise ValueError("Product is already inactive")
+        cursor = db.execute(
+            """
+            UPDATE products
+            SET is_active = 1,
+                updated_at = CURRENT_TIMESTAMP
+            WHERE id = ?
+            """,
+            (product_id,),
+        )
+        if cursor.rowcount != 1:
+            raise RuntimeError("Failed to restore product")
+        db.commit()
+
+    except Exception:
+        db.rollback()
+        raise
