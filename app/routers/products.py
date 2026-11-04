@@ -195,3 +195,5 @@ def restore_product(
             status_code=409,
             detail=message,
         ) from exc
+
+        ###
