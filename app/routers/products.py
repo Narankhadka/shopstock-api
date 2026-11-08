@@ -16,6 +16,7 @@ from app.schemas.stock import (
     StockAdjustmentIn,
     StockAdjustmentOut,
 )
+from app.security import require_api_key
 from app.services import product_service, stock_service
 from app.services.product_service import DuplicateSKUError
 
@@ -82,7 +83,10 @@ def get_product_sku(
     return product
 
 
-@router.post("", response_model=ProductCreatedOut, status_code=201)
+@router.post("",
+             response_model=ProductCreatedOut,
+             status_code=201,
+             dependencies=[Depends(require_api_key)])
 def create_product(
     data: ProductCreate,
     db: Annotated[sqlite3.Connection, Depends(get_db)],
@@ -96,7 +100,12 @@ def create_product(
         raise HTTPException(status_code=404, detail=str(e)) from e
 
 
-@router.patch("/{product_id}", response_model=ProductDetailOut, status_code=200)
+@router.patch(
+    "/{product_id}",
+    response_model=ProductDetailOut,
+    status_code=200,
+    dependencies=[Depends(require_api_key)],
+)
 def update_product(
     product_id: int,
     data: ProductUpdate,
@@ -112,6 +121,7 @@ def update_product(
     "/{product_id}/stock-adjustments",
     response_model=StockAdjustmentOut,
     status_code=201,
+    dependencies=[Depends(require_api_key)],
 )
 def create_stock_adjustment(product_id: int, data: StockAdjustmentIn, db: DBSession):
     try:
@@ -148,6 +158,7 @@ def get_stock_movements(
 @router.delete(
     "/{product_id}",
     status_code=204,
+    dependencies=[Depends(require_api_key)],
 )
 def deactivate_product(
     db: DBSession,
@@ -174,6 +185,7 @@ def deactivate_product(
 @router.post(
     "/{product_id}/restore",
     status_code=204,
+    dependencies=[Depends(require_api_key)],
 )
 def restore_product(
     db: DBSession,

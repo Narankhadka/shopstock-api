@@ -1,7 +1,7 @@
 from datetime import date
 from typing import Literal
 
-from fastapi import APIRouter, HTTPException, Path, Query
+from fastapi import APIRouter, Depends, HTTPException, Path, Query
 
 from app.database import DBSession
 from app.schemas.order import (
@@ -12,11 +12,16 @@ from app.schemas.order import (
     PaginatedOrdersOut,
 )
 from app.services import order_service
+from app.security import require_api_key
 
 router = APIRouter(prefix="/orders", tags=["Orders"])
 
 
-@router.post("", response_model=OrderOut, status_code=201)
+@router.post("",
+             response_model=OrderOut,
+             status_code=201,
+             dependencies=[Depends(require_api_key)],
+             )
 def create_order(
     data: OrderCreate,
     db: DBSession,
@@ -68,6 +73,7 @@ def list_orders(
     "/{order_id}/status",
     response_model=OrderDetailOut,
     status_code=200,
+    dependencies=[Depends(require_api_key)],
 )
 def update_order_status(
     data: OrderStatusUpdate,
