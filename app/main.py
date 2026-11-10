@@ -34,7 +34,17 @@ app.add_exception_handler(Exception, unhandled_exception_handler)  # type: ignor
 @app.middleware("http")
 async def log_requests(request: Request, call_next):
     start = time.perf_counter()
-    response = await call_next(request)
+    try:
+        response = await call_next(request)
+    except Exception:
+        duration_ms = (time.perf_counter() - start) * 1000
+        request_logger.error(
+            "%s %s -> 500 (%.1f ms)",
+            request.method,
+            request.url.path,
+            duration_ms,
+        )
+        raise
     duration_ms = (time.perf_counter() - start) * 1000
     request_logger.info(
         "%s %s -> %s (%.1f ms)",
@@ -44,8 +54,6 @@ async def log_requests(request: Request, call_next):
         duration_ms,
     )
     return response
-
-
 
 
 
@@ -66,3 +74,4 @@ def health(db: Annotated[sqlite3.Connection, Depends(get_db)]):
             content={"status": "error", "database": "unavailable"},
         )
     return {"status": "ok", "database": "connected"}
+
