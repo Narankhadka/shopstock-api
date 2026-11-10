@@ -26,22 +26,12 @@ def create_order(
     data: OrderCreate,
     db: DBSession,
 ):
-    try:
-        return order_service.create_order(db, data)
-    except ValueError as e:
-        message = str(e)
-
-        if "not found" in message or "inactive" in message:
-            raise HTTPException(status_code=404, detail=message) from e
-        raise HTTPException(status_code=409, detail=message) from e
-
+    return order_service.create_order(db, data)
 
 @router.get("/{order_id}", response_model=OrderDetailOut)
 def get_order_by_id(db: DBSession, order_id: int = Path(gt=0)):
-    try:
         return order_service.get_order_by_id(db, order_id)
-    except ValueError as e:
-        raise HTTPException(status_code=404, detail=str(e)) from e
+
 
 
 @router.get("", response_model=PaginatedOrdersOut)
@@ -80,23 +70,4 @@ def update_order_status(
     db: DBSession,
     order_id: int = Path(gt=0),
 ):
-    try:
-        return order_service.update_order_status(
-            db=db,
-            order_id=order_id,
-            data=data,
-        )
-
-    except ValueError as exc:
-        message = str(exc)
-
-        if message == "Order not found":
-            raise HTTPException(
-                status_code=404,
-                detail=message,
-            ) from exc
-
-        raise HTTPException(
-            status_code=409,
-            detail=message,
-        ) from exc
+    return order_service.update_order_status(db=db, order_id=order_id, data=data)
