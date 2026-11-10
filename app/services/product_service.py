@@ -4,9 +4,6 @@ from app.schemas.product import ProductCreate, ProductUpdate
 from app.exceptions import ConflictError, NotFoundError
 
 
-class DuplicateSKUError(Exception):
-    pass
-
 
 def list_products(
     db: sqlite3.Connection,
