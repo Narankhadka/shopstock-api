@@ -413,5 +413,7 @@ def update_order_status(
         current_status,
         data.status,
     )
+    if data.status == "cancelled":
+        logger.info("order_cancelled order_id=%s", order_id)
 
     return updated_order
