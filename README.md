@@ -46,3 +46,34 @@ an explicit timezone offset.
 Nepal Standard Time (NPT) is UTC+05:45.
 Clients should treat database timestamps as UTC before
 converting them to the user's local timezone.
+
+## Error handling and logging
+
+### Error format
+
+Every error uses the same shape:
+
+{"error": {"code": "NOT_FOUND", "message": "Product with id 9999 not found"}}
+
+Validation errors (422) also include a `details` list with the field
+name and message. The rejected input value is left out on purpose, so
+phone numbers are never echoed back.
+
+### Error codes
+
+- NOT_FOUND (404): product, order or category does not exist
+- METHOD_NOT_ALLOWED (405): wrong HTTP method on a known route
+- CONFLICT (409): duplicate SKU, inactive product, and similar clashes
+- INSUFFICIENT_STOCK (409): not enough stock
+- INVALID_TRANSITION (409): order status change not allowed
+- VALIDATION_ERROR (422): invalid request body or query parameter
+- INTERNAL_ERROR (500): unexpected failure, nothing internal is shown
+
+### Logging
+
+- Every request logs method, path, status and duration.
+- Business events are logged with IDs: order_created,
+  order_status_changed, order_cancelled, stock_adjusted.
+- Logs never contain customer names, phone numbers or the API key.
+- Run the server with `--no-access-log`, because uvicorn's own access
+  log prints the full query string, which can contain a phone number.
