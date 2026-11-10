@@ -137,13 +137,7 @@ def get_stock_movements(
     page: int = Query(default=1, ge=1),
     page_size: int = Query(default=10, ge=1, le=50),
 ):
-    try:
-        return stock_service.list_stock_movements(db, product_id, page, page_size)
-    except ValueError as e:
-        raise HTTPException(
-            status_code=404,
-            detail=str(e),
-        ) from e
+    return stock_service.list_stock_movements(db, product_id, page, page_size)
 
 
 @router.delete(
