@@ -71,3 +71,20 @@ async def validation_exception_handler(
             }
         },
     )
+
+import logging
+
+logger = logging.getLogger(__name__)
+
+
+async def unhandled_exception_handler(request: Request, exc: Exception) -> JSONResponse:
+    logger.exception("Unhandled error on %s %s", request.method, request.url.path)
+    return JSONResponse(
+        status_code=500,
+        content={
+            "error": {
+                "code": "INTERNAL_ERROR",
+                "message": "Something went wrong on our side",
+            }
+        },
+    )
