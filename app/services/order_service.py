@@ -1,4 +1,5 @@
 import sqlite3
+import logging
 
 from app.schemas.order import OrderCreate, OrderStatusUpdate
 from app.exceptions import ConflictError, InsufficientStockError, InvalidTransitionError, NotFoundError
@@ -9,6 +10,7 @@ ALLOWED_TRANSITIONS = {
     "delivered": set(),
     "cancelled": set(),
 }
+logger = logging.getLogger(__name__)
 
 
 def create_order(
@@ -145,9 +147,12 @@ def create_order(
         # 5. Commit everything together
         db.commit()
 
+
     except Exception:
         db.rollback()
         raise
+
+    logger.info("order_created order_id=%s item_count=%s", order_id, len(order_lines))
 
     # 6. Return the API-ready response
     return {
@@ -331,7 +336,7 @@ def update_order_status(
 
         if data.status not in ALLOWED_TRANSITIONS[current_status]:
             raise InvalidTransitionError(
-                    f"Invalid status transition from {current_status} to {data.status}"
+                f"Invalid status transition from {current_status} to {data.status}"
 )
 
 
@@ -402,5 +407,11 @@ def update_order_status(
     except Exception:
         db.rollback()
         raise
+    logger.info(
+        "order_status_changed order_id=%s from=%s to=%s",
+        order_id,
+        current_status,
+        data.status,
+    )
 
     return updated_order
