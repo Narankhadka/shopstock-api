@@ -13,6 +13,7 @@ from app.exceptions import (
     app_exception_handler,
     http_exception_handler,
     validation_exception_handler,
+    unhandled_exception_handler,
 )
 
 
@@ -21,6 +22,7 @@ app = FastAPI(title="ShopStock API")
 app.add_exception_handler(AppException, app_exception_handler)  # type: ignore[arg-type]
 app.add_exception_handler(StarletteHTTPException, http_exception_handler)  # type: ignore[arg-type]
 app.add_exception_handler(RequestValidationError, validation_exception_handler)  # type: ignore[arg-type]
+app.add_exception_handler(Exception, unhandled_exception_handler)  # type: ignore[arg-type]
 
 app.include_router(products.router)
 app.include_router(categories.router)
