@@ -1,6 +1,7 @@
 import sqlite3
 
 from app.schemas.product import ProductCreate, ProductUpdate
+from app.exceptions import ConflictError, NotFoundError
 
 
 class DuplicateSKUError(Exception):
@@ -162,7 +163,7 @@ def category_exists(db: sqlite3.Connection, category_id: int) -> bool:
 def create_product(db: sqlite3.Connection, data: ProductCreate) -> dict:
 
     if not category_exists(db, data.category_id):
-        raise ValueError("Category does not exist")
+        raise NotFoundError(f"Category with id {data.category_id} does not exist")
 
     price_paisa = int(data.price * 100)
 
@@ -190,9 +191,7 @@ def create_product(db: sqlite3.Connection, data: ProductCreate) -> dict:
     except sqlite3.IntegrityError as e:
         db.rollback()
         if "UNIQUE constraint failed: products.sku" in str(e):
-            raise DuplicateSKUError(
-                f"Product with SKU {data.sku} already exists"
-            ) from e
+            raise ConflictError(f"Product with SKU {data.sku} already exists") from e
         raise
 
     product = get_product_by_id(db, product_id)
