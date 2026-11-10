@@ -1,3 +1,7 @@
+import sqlite3
+import logging
+
+
 from fastapi import Request
 from fastapi.responses import JSONResponse
 from starlette.exceptions import HTTPException as StarletteHTTPException
@@ -72,8 +76,6 @@ async def validation_exception_handler(
         },
     )
 
-import logging
-
 logger = logging.getLogger(__name__)
 
 
@@ -87,4 +89,11 @@ async def unhandled_exception_handler(request: Request, exc: Exception) -> JSONR
                 "message": "Something went wrong on our side",
             }
         },
+    )
+
+async def integrity_error_handler(request: Request, exc: sqlite3.IntegrityError) -> JSONResponse:
+    logger.error("IntegrityError escaped the service layer: %s", exc)
+    return JSONResponse(
+        status_code=409,
+        content={"error": {"code": "CONFLICT", "message": "The request conflicts with existing data"}},
     )

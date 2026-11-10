@@ -16,6 +16,7 @@ from app.exceptions import (
     http_exception_handler,
     validation_exception_handler,
     unhandled_exception_handler,
+    integrity_error_handler
 )
 
 
@@ -30,6 +31,7 @@ app.add_exception_handler(AppException, app_exception_handler)  # type: ignore[a
 app.add_exception_handler(StarletteHTTPException, http_exception_handler)  # type: ignore[arg-type]
 app.add_exception_handler(RequestValidationError, validation_exception_handler)  # type: ignore[arg-type]
 app.add_exception_handler(Exception, unhandled_exception_handler)  # type: ignore[arg-type]
+app.add_exception_handler(sqlite3.IntegrityError, integrity_error_handler)  # type: ignore[arg-type]
 
 @app.middleware("http")
 async def log_requests(request: Request, call_next):
@@ -74,4 +76,3 @@ def health(db: Annotated[sqlite3.Connection, Depends(get_db)]):
             content={"status": "error", "database": "unavailable"},
         )
     return {"status": "ok", "database": "connected"}
-
