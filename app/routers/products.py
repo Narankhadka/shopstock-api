@@ -18,6 +18,7 @@ from app.schemas.stock import (
 )
 from app.security import require_api_key
 from app.services import product_service, stock_service
+from app.exceptions import NotFoundError
 
 router = APIRouter(prefix="/products", tags=["products"])
 
@@ -61,9 +62,7 @@ def get_products(
 def get_product(product_id: int, db: Annotated[sqlite3.Connection, Depends(get_db)]):
     product = product_service.get_product_by_id(db, product_id)
     if product is None:
-        raise HTTPException(
-            status_code=404, detail=f"Product with id {product_id} not found"
-        )
+        raise NotFoundError(f"Product with id {product_id} not found")
     return product
 
 
@@ -76,9 +75,7 @@ def get_product_sku(
     # Correct format but no such product -> 404.
     product = product_service.get_product_by_sku(db, sku)
     if product is None:
-        raise HTTPException(
-            status_code=404, detail=f"Product with sku {sku.upper()} not found"
-        )
+        raise NotFoundError(f"Product with sku {sku.upper()} not found")
     return product
 
 
