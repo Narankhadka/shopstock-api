@@ -106,11 +106,7 @@ def update_product(
     data: ProductUpdate,
     db: DBSession,
 ):
-    try:
         return product_service.update_product(db, product_id, data)
-    except ValueError as e:
-        raise HTTPException(status_code=404, detail=str(e)) from e
-
 
 @router.post(
     "/{product_id}/stock-adjustments",
