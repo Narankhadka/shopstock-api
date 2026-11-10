@@ -18,7 +18,6 @@ from app.schemas.stock import (
 )
 from app.security import require_api_key
 from app.services import product_service, stock_service
-from app.services.product_service import DuplicateSKUError
 
 router = APIRouter(prefix="/products", tags=["products"])
 
@@ -83,21 +82,17 @@ def get_product_sku(
     return product
 
 
-@router.post("",
-             response_model=ProductCreatedOut,
-             status_code=201,
-             dependencies=[Depends(require_api_key)])
+@router.post(
+    "",
+    response_model=ProductCreatedOut,
+    status_code=201,
+    dependencies=[Depends(require_api_key)],
+)
 def create_product(
     data: ProductCreate,
     db: Annotated[sqlite3.Connection, Depends(get_db)],
 ):
-    try:
-        return product_service.create_product(db, data)
-
-    except DuplicateSKUError as e:
-        raise HTTPException(status_code=409, detail=str(e)) from e
-    except ValueError as e:
-        raise HTTPException(status_code=404, detail=str(e)) from e
+    return product_service.create_product(db, data)
 
 
 @router.patch(
