@@ -1,6 +1,7 @@
 import sqlite3
 
 from app.schemas.order import OrderCreate, OrderStatusUpdate
+from app.exceptions import ConflictError, InsufficientStockError, InvalidTransitionError, NotFoundError
 
 ALLOWED_TRANSITIONS = {
     "pending": {"confirmed", "cancelled"},
@@ -32,13 +33,13 @@ def create_order(
             ).fetchone()
 
             if product is None:
-                raise ValueError(f"Product {item.product_id} not found")
+                raise NotFoundError(f"Product with id {item.product_id} not found")
 
             if not product["is_active"]:
-                raise ValueError(f"Product {item.product_id} is inactive")
+                raise ConflictError(f"Product with id {item.product_id} is inactive")
 
             if product["stock_quantity"] < item.quantity:
-                raise ValueError(
+                raise InsufficientStockError(
                     f"Insufficient stock for {product['name']}. "
                     f"Available: {product['stock_quantity']}, "
                     f"Requested: {item.quantity}"
@@ -110,7 +111,7 @@ def create_order(
             )
 
             if update_cursor.rowcount != 1:
-                raise ValueError(
+                raise RuntimeError(
                     f"Stock update failed for product {line['product_id']}"
                 )
             db.execute(
@@ -183,7 +184,7 @@ def get_order_by_id(
     ).fetchone()
 
     if order is None:
-        raise ValueError("Order not found")
+        raise NotFoundError(f"Order with id {order_id} not found")
     items = db.execute(
         """
     SELECT
@@ -323,15 +324,16 @@ def update_order_status(
         ).fetchone()
 
         if order is None:
-            raise ValueError("Order not found")
+            raise NotFoundError(f"Order with id {order_id} not found")
 
         # 2. Validate the requested status transition
         current_status = order["status"]
 
         if data.status not in ALLOWED_TRANSITIONS[current_status]:
-            raise ValueError(
-                f"Invalid status transition from {current_status} to {data.status}"
-            )
+            raise InvalidTransitionError(
+                    f"Invalid status transition from {current_status} to {data.status}"
+)
+
 
         # 3. Update order status and timestamp
         cursor = db.execute(
