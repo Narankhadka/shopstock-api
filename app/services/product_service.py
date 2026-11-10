@@ -208,13 +208,13 @@ def update_product(
     product = get_product_by_id(db, product_id)
 
     if product is None:
-        raise ValueError("Product not found")
+        raise NotFoundError(f"Product with id {product_id} not found")
 
     update_data = data.model_dump(exclude_unset=True)
     if "category_id" in update_data and not category_exists(
         db, update_data["category_id"]
     ):
-        raise ValueError("Category does not exist")
+        raise NotFoundError(f"Category with id {update_data['category_id']} does not exist")
 
     if "price" in update_data:
         update_data["price"] = int(update_data["price"] * 100)
