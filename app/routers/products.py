@@ -124,16 +124,7 @@ def update_product(
     dependencies=[Depends(require_api_key)],
 )
 def create_stock_adjustment(product_id: int, data: StockAdjustmentIn, db: DBSession):
-    try:
-        return stock_service.adjust_stock(db, product_id, data)
-    except ValueError as e:
-        message = str(e)
-
-        if message == "Product not found":
-            status_code = 404
-        else:
-            status_code = 409
-        raise HTTPException(status_code=status_code, detail=message) from e
+    return stock_service.adjust_stock(db, product_id, data)
 
 
 @router.get(
