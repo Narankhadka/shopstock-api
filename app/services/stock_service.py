@@ -1,8 +1,9 @@
 import sqlite3
+import logging
 
 from app.schemas.stock import StockAdjustmentIn
 from app.exceptions import ConflictError,InsufficientStockError, NotFoundError
-
+logger = logging.getLogger(__name__)
 def adjust_stock(
     db: sqlite3.Connection,
     product_id: int,
@@ -71,6 +72,12 @@ def adjust_stock(
 
     if movement is None:
         raise RuntimeError("Stock movement not found")
+    logger.info(
+        "stock_adjusted product_id=%s change=%s reason=%s",
+        product_id,
+        data.change,
+        data.reason,
+    )
 
     return {
         "product_id": product_id,
