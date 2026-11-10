@@ -266,10 +266,10 @@ def deactivate_product(
         ).fetchone()
 
         if product is None:
-            raise ValueError("Product not found")
+            raise NotFoundError(f"Product with id {product_id} not found")
 
         if not product["is_active"]:
-            raise ValueError("Product is already inactive")
+            raise ConflictError(f"Product with id {product_id} is already inactive")
 
         open_orders = db.execute(
             """
@@ -283,10 +283,9 @@ def deactivate_product(
         ).fetchone()[0]
 
         if open_orders > 0:
-            raise ValueError(
+            raise ConflictError(
                 f"Cannot deactivate product: {open_orders} open order(s) blocking"
             )
-
         db.execute(
             """
             UPDATE products
@@ -321,10 +320,10 @@ def restore_product(
         ).fetchone()
 
         if product is None:
-            raise ValueError("Product not found")
+            raise NotFoundError(f"Product with id {product_id} not found")
 
         if product["is_active"]:
-            raise ValueError("Product is already active")
+            raise ConflictError(f"Product with id {product_id} is already active")
         cursor = db.execute(
             """
             UPDATE products
