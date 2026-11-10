@@ -1,7 +1,7 @@
 import sqlite3
 
 from app.schemas.stock import StockAdjustmentIn
-
+from app.exceptions import ConflictError,InsufficientStockError, NotFoundError
 
 def adjust_stock(
     db: sqlite3.Connection,
@@ -22,15 +22,16 @@ def adjust_stock(
         ).fetchone()
 
         if product is None:
-            raise ValueError("Product Not found")
+            raise NotFoundError(f"Product with id {product_id} not found")
         if not product["is_active"]:
-            raise ValueError("Cannot adjust stock of an inactive product")
+            raise ConflictError(f"Product with id {product_id} is inactive")
 
         previous_quantity = product["stock_quantity"]
         new_quantity = previous_quantity + data.change
 
         if new_quantity < 0:
-            raise ValueError("Insufficient stock for adjustment")
+            raise InsufficientStockError(
+                f"Cannot adjust by {data.change}: only {previous_quantity} in stock")
 
         db.execute(
             """
@@ -96,7 +97,7 @@ def list_stock_movements(
     ).fetchone()
 
     if product is None:
-        raise ValueError("Product Not found")
+        raise NotFoundError(f"Product with id {product_id} not found")
     total = db.execute(
         "SELECT COUNT(*) FROM stock_movements WHERE product_id = ?",
         (product_id,),
