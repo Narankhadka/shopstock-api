@@ -95,3 +95,11 @@ Run tests in reverse or random order to check they do not depend on each other:
 
 Known limitation: `starlette.testclient` prints a deprecation warning asking
 for `httpx2`. It is not installed because it is not in the allowed packages.
+
+### Mutation check (Task 3.4)
+
+I broke the code in three places and confirmed that a test fails each time:
+
+- Removing the duplicate-SKU check fails `test_create_product_with_duplicate_sku_returns_409`.
+- Flipping the sort direction fails `test_list_products_sorts_by_price_ascending_and_descending`.
+- Removing the `min_price` filter fails `test_list_products_filters_by_price_range_including_boundaries`.
