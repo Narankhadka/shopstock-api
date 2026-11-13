@@ -103,3 +103,21 @@ I broke the code in three places and confirmed that a test fails each time:
 - Removing the duplicate-SKU check fails `test_create_product_with_duplicate_sku_returns_409`.
 - Flipping the sort direction fails `test_list_products_sorts_by_price_ascending_and_descending`.
 - Removing the `min_price` filter fails `test_list_products_filters_by_price_range_including_boundaries`.
+
+### What the order tests found (Task 3.5)
+
+The order and stock tests all passed on the first run, so they did not find a bug in
+my own code. To check that they would catch one, I changed the stock restore on cancel
+from `+` to `-`. Three tests failed:
+
+- `test_cancel_restores_stock_and_keeps_both_movements`
+- `test_cancelling_twice_does_not_restore_stock_twice`
+- `test_stock_history_adds_up_to_current_stock_after_a_mix_of_operations`
+
+I then reverted the change.
+
+### What is not tested
+
+`test_order_for_the_last_unit_twice_rejects_the_second_order` runs two orders one after
+the other, not at the same time. The protection against true concurrent overselling
+(`BEGIN IMMEDIATE` plus the conditional `UPDATE`) is not covered by an automated test.
