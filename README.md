@@ -77,3 +77,21 @@ phone numbers are never echoed back.
 - Logs never contain customer names, phone numbers or the API key.
 - Run the server with `--no-access-log`, because uvicorn's own access
   log prints the full query string, which can contain a phone number.
+
+## Testing
+
+Run all tests:
+
+    pytest
+
+Each test uses a fresh temporary database, so the development database is
+never touched. The API key for tests is set in `tests/conftest.py`, so tests
+do not need a `.env` file.
+
+Run tests in reverse or random order to check they do not depend on each other:
+
+    pytest --test-order=reverse
+    pytest --test-order=random
+
+Known limitation: `starlette.testclient` prints a deprecation warning asking
+for `httpx2`. It is not installed because it is not in the allowed packages.
