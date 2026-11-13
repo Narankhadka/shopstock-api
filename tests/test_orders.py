@@ -624,3 +624,52 @@ def test_inventory_summary_on_empty_database_does_not_crash(client):
     assert body["total_stock_units"] == 0
     assert float(body["total_stock_value"]) == 0.0
     assert body["low_stock"] == []
+
+# ---------- Edge cases from the task (looking for real bugs) ----------
+
+
+def test_stock_adjustment_with_huge_number_does_not_crash(client, auth_headers, make_product):
+    product = make_product(stock_quantity=10)
+
+    response = client.post(
+        f"/products/{product['id']}/stock-adjustments",
+        headers=auth_headers,
+        json={"change": 2147483647, "reason": "restock"},
+    )
+
+    assert response.status_code in (201, 422)
+    if response.status_code == 201:
+        assert stock_of(client, product["id"]) == 10 + 2147483647
+    else:
+        assert stock_of(client, product["id"]) == 10
+
+
+def test_product_only_in_delivered_and_cancelled_orders_can_be_deleted(
+    client, auth_headers, make_product
+):
+    product = make_product(stock_quantity=5)
+    delivered = order_in_status(client, auth_headers, product, "delivered")
+    cancelled = order_in_status(client, auth_headers, product, "cancelled")
+
+    response = client.delete(f"/products/{product['id']}", headers=auth_headers)
+
+    assert response.status_code == 204
+    assert client.get(f"/orders/{delivered['id']}").status_code == 200
+    assert client.get(f"/orders/{cancelled['id']}").status_code == 200
+
+
+def test_order_date_filter_includes_both_end_days(client, make_product, make_order):
+    product = make_product(stock_quantity=5)
+    order = make_order([{"product_id": product["id"], "quantity": 1}])
+    order_day = order["created_at"][:10]
+
+    response = client.get(f"/orders?date_from={order_day}&date_to={order_day}")
+
+    assert response.status_code == 200
+    assert response.json()["total"] == 1
+
+
+def test_order_date_filter_with_from_after_to_returns_422(client):
+    response = client.get("/orders?date_from=2026-11-10&date_to=2026-11-01")
+
+    assert response.status_code == 422
