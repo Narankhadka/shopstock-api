@@ -121,3 +121,34 @@ I then reverted the change.
 `test_order_for_the_last_unit_twice_rejects_the_second_order` runs two orders one after
 the other, not at the same time. The protection against true concurrent overselling
 (`BEGIN IMMEDIATE` plus the conditional `UPDATE`) is not covered by an automated test.
+
+
+## Reorder level
+
+Each product has its own `reorder_level` (integer, 0 to 1,000,000, default 5). It is
+accepted by `POST /products` and `PATCH /products/{id}` and returned in every product
+response. `null`, negative and non-integer values return 422.
+
+**Report precedence.** `GET /reports/inventory-summary` lists a product as low stock
+when `stock_quantity < reorder_level`. If the caller passes `?threshold=N`, that number
+replaces every product's `reorder_level` for that request (an explicit value wins).
+`reorder_level = 0` means the product is never listed as low stock. `LOW_STOCK_DEFAULT`
+in `.env` is not used by the report.
+
+### Migrations
+
+Migration files live in `sql/migrations/` and are applied in file-name order:
+
+```bash
+python -m scripts.migrate
+```
+
+Applied files are recorded in the `schema_migrations` table, so running it twice does
+nothing the second time. To check whether your local database is migrated:
+
+```bash
+sqlite3 shopstock.db "SELECT version, applied_at FROM schema_migrations;"
+```
+
+A fresh database made from `sql/schema.sql` already has the column and the record. Copy
+the database file before migrating one you care about.
