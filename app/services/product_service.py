@@ -69,10 +69,11 @@ def list_products(
     total = db.execute(count_sql, values).fetchone()[0]
     total_pages = (total + page_size - 1) // page_size
     sql = (
-        "SELECT id, sku, name, category_id, price, stock_quantity, is_active "
+               "SELECT id, sku, name, category_id, price, stock_quantity, "
+        "reorder_level, is_active "
         "FROM products WHERE "
         + where
-        + f" ORDER BY {sort_by} {order.upper()}, id ASC"
+        + f" ORDER BY {allowed_sort_columns[sort_by]} {order.upper()}, id ASC"
         + " LIMIT ? OFFSET ?"
     )
     values.extend([page_size, offset])
@@ -87,6 +88,7 @@ def list_products(
             "category_id": row["category_id"],
             "price": row["price"] / 100,
             "stock_quantity": row["stock_quantity"],
+            "reorder_level": row["reorder_level"],
             "is_active": bool(row["is_active"]),
         }
         products.append(product)
@@ -103,7 +105,7 @@ def list_products(
 def get_product_by_id(db: sqlite3.Connection, product_id: int) -> dict | None:
     row = db.execute(
         "SELECT p.id, p.sku, p.name, p.category_id, c.name AS category_name, "
-        "p.price, p.stock_quantity, p.is_active, "
+        "p.price, p.stock_quantity, p.reorder_level, p.is_active, "
         "p.created_at,p.updated_at "
         "FROM products p JOIN categories c ON c.id = p.category_id "
         "WHERE p.id = ?",
@@ -121,6 +123,7 @@ def get_product_by_id(db: sqlite3.Connection, product_id: int) -> dict | None:
         "category_name": row["category_name"],
         "price": row["price"] / 100,
         "stock_quantity": row["stock_quantity"],
+        "reorder_level": row["reorder_level"],
         "is_active": bool(row["is_active"]),
         "created_at": row["created_at"],
         "updated_at": row["updated_at"],
@@ -130,7 +133,7 @@ def get_product_by_id(db: sqlite3.Connection, product_id: int) -> dict | None:
 def get_product_by_sku(db: sqlite3.Connection, sku: str) -> dict | None:
     row = db.execute(
         "SELECT p.id, p.sku, p.name, p.category_id, c.name AS category_name, "
-        "p.price, p.stock_quantity, p.is_active "
+        "p.price, p.stock_quantity, p.reorder_level, p.is_active "
         "FROM products p JOIN categories c ON c.id = p.category_id "
         "WHERE p.sku = ?",
         (sku.upper(),),
@@ -147,6 +150,7 @@ def get_product_by_sku(db: sqlite3.Connection, sku: str) -> dict | None:
         "category_name": row["category_name"],
         "price": row["price"] / 100,
         "stock_quantity": row["stock_quantity"],
+        "reorder_level": row["reorder_level"],
         "is_active": bool(row["is_active"]),
     }
 
@@ -168,8 +172,8 @@ def create_product(db: sqlite3.Connection, data: ProductCreate) -> dict:
         cursor = db.execute(
             """
             INSERT INTO products
-                (sku, name, category_id, price, stock_quantity)
-            VALUES (?, ?, ?, ?, ?)
+                (sku, name, category_id, price, stock_quantity, reorder_level)
+            VALUES (?, ?, ?, ?, ?, ?)
             """,
             (
                 data.sku,
@@ -177,6 +181,7 @@ def create_product(db: sqlite3.Connection, data: ProductCreate) -> dict:
                 data.category_id,
                 price_paisa,
                 data.stock_quantity,
+                data.reorder_level,
             ),
         )
 

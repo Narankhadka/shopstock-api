@@ -16,6 +16,7 @@ ProductName = Annotated[
 ]
 ProductPrice = Annotated[Decimal, Field(gt=0, le=1000000, decimal_places=2)]
 ProductCategoryId = Annotated[int, Field(gt=0, strict=True)]
+ReorderLevel = Annotated[int, Field(ge=0, le=1000000, strict=True)]
 
 
 class ProductOut(BaseModel):
@@ -26,6 +27,7 @@ class ProductOut(BaseModel):
     price: float
     stock_quantity: int
     is_active: bool
+    reorder_level: int
 
 
 class ProductDetailOut(ProductOut):
@@ -38,6 +40,7 @@ class ProductCreate(BaseModel):
     category_id: ProductCategoryId
     price: ProductPrice
     stock_quantity: Annotated[int, Field(ge=0, strict=True)]
+    reorder_level: ReorderLevel = 5
 
 
 class ProductCreatedOut(ProductOut):
@@ -58,6 +61,7 @@ class ProductUpdate(BaseModel):
     name: ProductName | None = None
     price: ProductPrice | None = None
     category_id: ProductCategoryId | None = None
+    reorder_level: ReorderLevel | None = None
     is_active: bool | None = None
 
     @model_validator(mode="after")
