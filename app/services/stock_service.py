@@ -1,9 +1,12 @@
-import sqlite3
 import logging
+import sqlite3
 
+from app.exceptions import ConflictError, InsufficientStockError, NotFoundError
 from app.schemas.stock import StockAdjustmentIn
-from app.exceptions import ConflictError,InsufficientStockError, NotFoundError
+
 logger = logging.getLogger(__name__)
+
+
 def adjust_stock(
     db: sqlite3.Connection,
     product_id: int,
@@ -32,7 +35,8 @@ def adjust_stock(
 
         if new_quantity < 0:
             raise InsufficientStockError(
-                f"Cannot adjust by {data.change}: only {previous_quantity} in stock")
+                f"Cannot adjust by {data.change}: only {previous_quantity} in stock"
+            )
 
         db.execute(
             """

@@ -1,8 +1,13 @@
-import sqlite3
 import logging
+import sqlite3
 
+from app.exceptions import (
+    ConflictError,
+    InsufficientStockError,
+    InvalidTransitionError,
+    NotFoundError,
+)
 from app.schemas.order import OrderCreate, OrderStatusUpdate
-from app.exceptions import ConflictError, InsufficientStockError, InvalidTransitionError, NotFoundError
 
 ALLOWED_TRANSITIONS = {
     "pending": {"confirmed", "cancelled"},
@@ -146,7 +151,6 @@ def create_order(
 
         # 5. Commit everything together
         db.commit()
-
 
     except Exception:
         db.rollback()
@@ -337,8 +341,7 @@ def update_order_status(
         if data.status not in ALLOWED_TRANSITIONS[current_status]:
             raise InvalidTransitionError(
                 f"Invalid status transition from {current_status} to {data.status}"
-)
-
+            )
 
         # 3. Update order status and timestamp
         cursor = db.execute(

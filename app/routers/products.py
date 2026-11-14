@@ -4,6 +4,7 @@ from typing import Annotated, Literal
 from fastapi import APIRouter, Depends, HTTPException, Path, Query
 
 from app.database import DBSession, get_db
+from app.exceptions import NotFoundError
 from app.schemas.product import (
     PaginatedProductsOut,
     ProductCreate,
@@ -18,7 +19,6 @@ from app.schemas.stock import (
 )
 from app.security import require_api_key
 from app.services import product_service, stock_service
-from app.exceptions import NotFoundError
 
 router = APIRouter(prefix="/products", tags=["products"])
 
@@ -103,7 +103,8 @@ def update_product(
     data: ProductUpdate,
     db: DBSession,
 ):
-        return product_service.update_product(db, product_id, data)
+    return product_service.update_product(db, product_id, data)
+
 
 @router.post(
     "/{product_id}/stock-adjustments",
@@ -137,9 +138,7 @@ def deactivate_product(
     db: DBSession,
     product_id: int = Path(gt=0),
 ) -> None:
-        product_service.deactivate_product(db, product_id)
-
-
+    product_service.deactivate_product(db, product_id)
 
 
 @router.post(
@@ -151,4 +150,4 @@ def restore_product(
     db: DBSession,
     product_id: int = Path(gt=0),
 ) -> None:
-        product_service.restore_product(db, product_id)
+    product_service.restore_product(db, product_id)

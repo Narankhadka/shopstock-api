@@ -1,25 +1,23 @@
-import sqlite3
 import logging
+import sqlite3
 import time
 from typing import Annotated
 
-from fastapi import Depends, FastAPI,Request
+from fastapi import Depends, FastAPI, Request
+from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
 from starlette.exceptions import HTTPException as StarletteHTTPException
 
 from app.database import get_db
-from app.routers import categories, orders, products, reports
-from fastapi.exceptions import RequestValidationError
 from app.exceptions import (
     AppException,
     app_exception_handler,
     http_exception_handler,
-    validation_exception_handler,
+    integrity_error_handler,
     unhandled_exception_handler,
-    integrity_error_handler
+    validation_exception_handler,
 )
-
-
+from app.routers import categories, orders, products, reports
 
 logging.basicConfig(
     level=logging.INFO,
@@ -32,6 +30,7 @@ app.add_exception_handler(StarletteHTTPException, http_exception_handler)  # typ
 app.add_exception_handler(RequestValidationError, validation_exception_handler)  # type: ignore[arg-type]
 app.add_exception_handler(Exception, unhandled_exception_handler)  # type: ignore[arg-type]
 app.add_exception_handler(sqlite3.IntegrityError, integrity_error_handler)  # type: ignore[arg-type]
+
 
 @app.middleware("http")
 async def log_requests(request: Request, call_next):
@@ -56,8 +55,6 @@ async def log_requests(request: Request, call_next):
         duration_ms,
     )
     return response
-
-
 
 
 app.include_router(products.router)

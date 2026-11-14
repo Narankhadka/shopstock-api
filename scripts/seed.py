@@ -1,4 +1,4 @@
-import os 
+import os
 import sqlite3
 from pathlib import Path
 
@@ -11,7 +11,7 @@ CATEGORIES = [
     "Household",
     "Accessories",
     "Personal Care",
-    "Seasonal",       # product nabhayeko category (empty)
+    "Seasonal",  # product nabhayeko category (empty)
 ]
 
 # (sku, name, category_name, price_in_paisa, stock_quantity, is_active)

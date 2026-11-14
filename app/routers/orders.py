@@ -11,27 +11,28 @@ from app.schemas.order import (
     OrderStatusUpdate,
     PaginatedOrdersOut,
 )
-from app.services import order_service
 from app.security import require_api_key
+from app.services import order_service
 
 router = APIRouter(prefix="/orders", tags=["Orders"])
 
 
-@router.post("",
-             response_model=OrderOut,
-             status_code=201,
-             dependencies=[Depends(require_api_key)],
-             )
+@router.post(
+    "",
+    response_model=OrderOut,
+    status_code=201,
+    dependencies=[Depends(require_api_key)],
+)
 def create_order(
     data: OrderCreate,
     db: DBSession,
 ):
     return order_service.create_order(db, data)
 
+
 @router.get("/{order_id}", response_model=OrderDetailOut)
 def get_order_by_id(db: DBSession, order_id: int = Path(gt=0)):
-        return order_service.get_order_by_id(db, order_id)
-
+    return order_service.get_order_by_id(db, order_id)
 
 
 @router.get("", response_model=PaginatedOrdersOut)

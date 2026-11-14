@@ -3,7 +3,9 @@ import sqlite3
 
 def test_fresh_database_has_all_tables(db_path):
     conn = sqlite3.connect(db_path)
-    rows = conn.execute("SELECT name FROM sqlite_master WHERE type = 'table'").fetchall()
+    rows = conn.execute(
+        "SELECT name FROM sqlite_master WHERE type = 'table'"
+    ).fetchall()
     conn.close()
 
     table_names = {row[0] for row in rows}

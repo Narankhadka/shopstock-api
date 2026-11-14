@@ -1,6 +1,5 @@
 import pytest
 
-
 # ---------- Helpers ----------
 
 
@@ -95,7 +94,9 @@ def test_create_order_for_exact_remaining_stock_leaves_zero(
 ):
     product = make_product(stock_quantity=4)
 
-    response = place_order(client, auth_headers, [{"product_id": product["id"], "quantity": 4}])
+    response = place_order(
+        client, auth_headers, [{"product_id": product["id"], "quantity": 4}]
+    )
 
     assert response.status_code == 201
     assert stock_of(client, product["id"]) == 0
@@ -168,7 +169,9 @@ def test_order_with_inactive_product_is_rejected_and_changes_nothing(
     product = make_product(stock_quantity=5)
     client.delete(f"/products/{product['id']}", headers=auth_headers)
 
-    response = place_order(client, auth_headers, [{"product_id": product["id"], "quantity": 1}])
+    response = place_order(
+        client, auth_headers, [{"product_id": product["id"], "quantity": 1}]
+    )
 
     assert response.status_code == 409
     assert stock_of(client, product["id"]) == 5
@@ -179,20 +182,28 @@ def test_order_with_inactive_product_is_rejected_and_changes_nothing(
 
 
 @pytest.mark.parametrize("quantity", [0, -1, 101])
-def test_order_with_invalid_quantity_returns_422(client, auth_headers, make_product, quantity):
+def test_order_with_invalid_quantity_returns_422(
+    client, auth_headers, make_product, quantity
+):
     product = make_product(stock_quantity=100)
 
-    response = place_order(client, auth_headers, [{"product_id": product["id"], "quantity": quantity}])
+    response = place_order(
+        client, auth_headers, [{"product_id": product["id"], "quantity": quantity}]
+    )
 
     assert response.status_code == 422
     assert stock_of(client, product["id"]) == 100
 
 
 @pytest.mark.parametrize("quantity", [1, 100])
-def test_order_with_boundary_quantity_is_accepted(client, auth_headers, make_product, quantity):
+def test_order_with_boundary_quantity_is_accepted(
+    client, auth_headers, make_product, quantity
+):
     product = make_product(stock_quantity=100)
 
-    response = place_order(client, auth_headers, [{"product_id": product["id"], "quantity": quantity}])
+    response = place_order(
+        client, auth_headers, [{"product_id": product["id"], "quantity": quantity}]
+    )
 
     assert response.status_code == 201
 
@@ -236,11 +247,16 @@ def test_order_with_same_product_twice_returns_422(client, auth_headers, make_pr
     "phone",
     ["1234567890", "9641234567", "984123456", "98412345678", "98412abc90", ""],
 )
-def test_order_with_invalid_phone_returns_422(client, auth_headers, make_product, phone):
+def test_order_with_invalid_phone_returns_422(
+    client, auth_headers, make_product, phone
+):
     product = make_product(stock_quantity=5)
 
     response = place_order(
-        client, auth_headers, [{"product_id": product["id"], "quantity": 1}], customer_phone=phone
+        client,
+        auth_headers,
+        [{"product_id": product["id"], "quantity": 1}],
+        customer_phone=phone,
     )
 
     assert response.status_code == 422
@@ -248,17 +264,24 @@ def test_order_with_invalid_phone_returns_422(client, auth_headers, make_product
 
 
 @pytest.mark.parametrize("phone", ["9741234567", "9841234567"])
-def test_order_with_valid_nepali_phone_is_accepted(client, auth_headers, make_product, phone):
+def test_order_with_valid_nepali_phone_is_accepted(
+    client, auth_headers, make_product, phone
+):
     product = make_product(stock_quantity=5)
 
     response = place_order(
-        client, auth_headers, [{"product_id": product["id"], "quantity": 1}], customer_phone=phone
+        client,
+        auth_headers,
+        [{"product_id": product["id"], "quantity": 1}],
+        customer_phone=phone,
     )
 
     assert response.status_code == 201
 
 
-def test_order_ignores_prices_and_total_sent_by_the_client(client, auth_headers, make_product):
+def test_order_ignores_prices_and_total_sent_by_the_client(
+    client, auth_headers, make_product
+):
     product = make_product(price=350, stock_quantity=5)
 
     response = client.post(
@@ -286,7 +309,9 @@ def test_price_change_after_ordering_does_not_change_the_stored_order(
     product = make_product(price=350, stock_quantity=5)
     order = make_order([{"product_id": product["id"], "quantity": 2}])
 
-    client.patch(f"/products/{product['id']}", headers=auth_headers, json={"price": 999})
+    client.patch(
+        f"/products/{product['id']}", headers=auth_headers, json={"price": 999}
+    )
 
     saved = client.get(f"/orders/{order['id']}").json()
     assert saved["items"][0]["unit_price"] == 350.0
@@ -342,7 +367,9 @@ def test_list_orders_filters_by_status_and_reports_total(
         ("confirmed", "cancelled"),
     ],
 )
-def test_valid_status_transition_returns_200(client, auth_headers, make_product, start, target):
+def test_valid_status_transition_returns_200(
+    client, auth_headers, make_product, start, target
+):
     product = make_product(stock_quantity=5)
     order = order_in_status(client, auth_headers, product, start)
 
@@ -382,7 +409,9 @@ def test_invalid_status_transition_returns_409_and_keeps_status(
     assert client.get(f"/orders/{order['id']}").json()["status"] == start
 
 
-def test_status_change_with_unknown_status_returns_422(client, auth_headers, make_product, make_order):
+def test_status_change_with_unknown_status_returns_422(
+    client, auth_headers, make_product, make_order
+):
     product = make_product(stock_quantity=5)
     order = make_order([{"product_id": product["id"], "quantity": 1}])
 
@@ -446,7 +475,9 @@ def test_product_in_open_order_cannot_be_deleted_until_order_is_cancelled(
     assert allowed.status_code == 204
 
 
-def test_deleted_product_still_shows_in_old_order(client, auth_headers, make_product, make_order):
+def test_deleted_product_still_shows_in_old_order(
+    client, auth_headers, make_product, make_order
+):
     product = make_product(stock_quantity=5)
     order = make_order([{"product_id": product["id"], "quantity": 1}])
     set_status(client, auth_headers, order["id"], "cancelled")
@@ -461,7 +492,9 @@ def test_deleted_product_still_shows_in_old_order(client, auth_headers, make_pro
 # ---------- Stock adjustments ----------
 
 
-def test_stock_adjustment_updates_stock_and_writes_movement(client, auth_headers, make_product):
+def test_stock_adjustment_updates_stock_and_writes_movement(
+    client, auth_headers, make_product
+):
     product = make_product(stock_quantity=10)
 
     response = client.post(
@@ -477,7 +510,9 @@ def test_stock_adjustment_updates_stock_and_writes_movement(client, auth_headers
     assert movements_of(client, product["id"])[0]["reason"] == "restock"
 
 
-def test_stock_adjustment_down_to_exactly_zero_is_allowed(client, auth_headers, make_product):
+def test_stock_adjustment_down_to_exactly_zero_is_allowed(
+    client, auth_headers, make_product
+):
     product = make_product(stock_quantity=10)
 
     response = client.post(
@@ -515,11 +550,15 @@ def test_stock_adjustment_below_zero_returns_409_and_writes_no_movement(
         {"change": 1},
     ],
 )
-def test_invalid_stock_adjustment_returns_422(client, auth_headers, make_product, payload):
+def test_invalid_stock_adjustment_returns_422(
+    client, auth_headers, make_product, payload
+):
     product = make_product(stock_quantity=10)
 
     response = client.post(
-        f"/products/{product['id']}/stock-adjustments", headers=auth_headers, json=payload
+        f"/products/{product['id']}/stock-adjustments",
+        headers=auth_headers,
+        json=payload,
     )
 
     assert response.status_code == 422
@@ -536,7 +575,9 @@ def test_stock_adjustment_on_unknown_product_returns_404(client, auth_headers):
     assert response.status_code == 404
 
 
-def test_stock_adjustment_on_inactive_product_returns_409(client, auth_headers, make_product):
+def test_stock_adjustment_on_inactive_product_returns_409(
+    client, auth_headers, make_product
+):
     product = make_product(stock_quantity=10)
     client.delete(f"/products/{product['id']}", headers=auth_headers)
 
@@ -564,7 +605,9 @@ def test_stock_history_adds_up_to_current_stock_after_a_mix_of_operations(
     movements = movements_of(client, product["id"])
 
     assert len(movements) == 5
-    assert initial + sum(m["change"] for m in movements) == stock_of(client, product["id"])
+    assert initial + sum(m["change"] for m in movements) == stock_of(
+        client, product["id"]
+    )
 
 
 # ---------- Inventory report ----------
@@ -625,10 +668,13 @@ def test_inventory_summary_on_empty_database_does_not_crash(client):
     assert float(body["total_stock_value"]) == 0.0
     assert body["low_stock"] == []
 
+
 # ---------- Edge cases from the task (looking for real bugs) ----------
 
 
-def test_stock_adjustment_with_huge_number_does_not_crash(client, auth_headers, make_product):
+def test_stock_adjustment_with_huge_number_does_not_crash(
+    client, auth_headers, make_product
+):
     product = make_product(stock_quantity=10)
 
     response = client.post(

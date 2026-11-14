@@ -10,12 +10,12 @@ os.environ["DATABASE_PATH"] = str(
     Path(tempfile.gettempdir()) / "shopstock_pytest_unused.db"
 )
 
-import pytest  # noqa: E402
-from fastapi.testclient import TestClient  # noqa: E402
+import pytest
+from fastapi.testclient import TestClient
 
-from app.config import settings  # noqa: E402
-from app.database import get_db  # noqa: E402
-from app.main import app  # noqa: E402
+from app.config import settings
+from app.database import get_db
+from app.main import app
 
 SCHEMA_FILE = Path(__file__).resolve().parent.parent / "sql" / "schema.sql"
 

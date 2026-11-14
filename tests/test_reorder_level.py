@@ -48,7 +48,9 @@ def test_create_with_invalid_reorder_level_returns_422(
 
 
 def test_create_accepts_reorder_level_zero(client, auth_headers, default_category_id):
-    response = create_product(client, auth_headers, default_category_id, reorder_level=0)
+    response = create_product(
+        client, auth_headers, default_category_id, reorder_level=0
+    )
 
     assert response.status_code == 201
     assert response.json()["reorder_level"] == 0
@@ -76,7 +78,9 @@ def test_patch_with_invalid_reorder_level_keeps_old_value(
     product = create_product(client, auth_headers, default_category_id).json()
 
     response = client.patch(
-        f"/products/{product['id']}", headers=auth_headers, json={"reorder_level": value}
+        f"/products/{product['id']}",
+        headers=auth_headers,
+        json={"reorder_level": value},
     )
 
     assert response.status_code == 422
@@ -87,10 +91,22 @@ def test_low_stock_uses_each_products_own_reorder_level(
     client, auth_headers, default_category_id
 ):
     # Same stock (10): a pen is fine, a charger is an emergency.
-    create_product(client, auth_headers, default_category_id,
-                   sku="STA-0001", name="Gel Pen", reorder_level=5)
-    create_product(client, auth_headers, default_category_id,
-                   sku="ELE-0002", name="Phone Charger", reorder_level=20)
+    create_product(
+        client,
+        auth_headers,
+        default_category_id,
+        sku="STA-0001",
+        name="Gel Pen",
+        reorder_level=5,
+    )
+    create_product(
+        client,
+        auth_headers,
+        default_category_id,
+        sku="ELE-0002",
+        name="Phone Charger",
+        reorder_level=20,
+    )
 
     body = client.get("/reports/inventory-summary").json()
 
@@ -100,10 +116,22 @@ def test_low_stock_uses_each_products_own_reorder_level(
 def test_explicit_threshold_overrides_every_reorder_level(
     client, auth_headers, default_category_id
 ):
-    create_product(client, auth_headers, default_category_id,
-                   sku="STA-0001", name="Gel Pen", reorder_level=5)
-    create_product(client, auth_headers, default_category_id,
-                   sku="ELE-0002", name="Phone Charger", reorder_level=20)
+    create_product(
+        client,
+        auth_headers,
+        default_category_id,
+        sku="STA-0001",
+        name="Gel Pen",
+        reorder_level=5,
+    )
+    create_product(
+        client,
+        auth_headers,
+        default_category_id,
+        sku="ELE-0002",
+        name="Phone Charger",
+        reorder_level=20,
+    )
 
     low = client.get("/reports/inventory-summary?threshold=5").json()
     high = client.get("/reports/inventory-summary?threshold=11").json()
@@ -112,9 +140,12 @@ def test_explicit_threshold_overrides_every_reorder_level(
     assert {item["sku"] for item in high["low_stock"]} == {"STA-0001", "ELE-0002"}
 
 
-def test_reorder_level_zero_is_never_low_stock(client, auth_headers, default_category_id):
-    create_product(client, auth_headers, default_category_id,
-                   stock_quantity=0, reorder_level=0)
+def test_reorder_level_zero_is_never_low_stock(
+    client, auth_headers, default_category_id
+):
+    create_product(
+        client, auth_headers, default_category_id, stock_quantity=0, reorder_level=0
+    )
 
     body = client.get("/reports/inventory-summary").json()
 

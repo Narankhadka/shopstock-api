@@ -16,7 +16,9 @@ def product_payload(category_id, **overrides):
 # ---------- Create ----------
 
 
-def test_create_product_returns_201_and_is_visible(client, auth_headers, default_category_id):
+def test_create_product_returns_201_and_is_visible(
+    client, auth_headers, default_category_id
+):
     response = client.post(
         "/products",
         headers=auth_headers,
@@ -182,7 +184,9 @@ def test_list_products_filters_by_category(client, make_product, make_category):
     assert response.json()["total"] == 1
 
 
-def test_list_products_filters_by_price_range_including_boundaries(client, make_product):
+def test_list_products_filters_by_price_range_including_boundaries(
+    client, make_product
+):
     make_product(sku="ELE-0001", price=100)
     mid = make_product(sku="ELE-0002", price=200)
     high = make_product(sku="ELE-0003", price=300)
@@ -248,7 +252,9 @@ def test_list_products_with_min_price_above_max_price_returns_422(client):
     assert response.status_code == 422
 
 
-def test_list_products_pagination_returns_every_product_exactly_once(client, make_product):
+def test_list_products_pagination_returns_every_product_exactly_once(
+    client, make_product
+):
     for number in range(25):
         make_product(sku=f"ELE-{number:04d}", price=100)  # equal prices on purpose
 
@@ -297,7 +303,9 @@ def test_patch_with_empty_body_is_rejected(client, auth_headers, make_product):
 def test_patch_cannot_change_sku(client, auth_headers, make_product):
     product = make_product(sku="ELE-0001")
 
-    client.patch(f"/products/{product['id']}", headers=auth_headers, json={"sku": "ELE-9999"})
+    client.patch(
+        f"/products/{product['id']}", headers=auth_headers, json={"sku": "ELE-9999"}
+    )
 
     assert client.get(f"/products/{product['id']}").json()["sku"] == "ELE-0001"
 
@@ -348,7 +356,9 @@ def test_delete_product_in_pending_order_returns_409(
     assert client.get(f"/products/{product['id']}").json()["is_active"] is True
 
 
-def test_restore_makes_a_deleted_product_visible_again(client, auth_headers, make_product):
+def test_restore_makes_a_deleted_product_visible_again(
+    client, auth_headers, make_product
+):
     product = make_product()
     client.delete(f"/products/{product['id']}", headers=auth_headers)
 
@@ -358,7 +368,9 @@ def test_restore_makes_a_deleted_product_visible_again(client, auth_headers, mak
     assert client.get("/products").json()["total"] == 1
 
 
-def test_restore_an_already_active_product_returns_409(client, auth_headers, make_product):
+def test_restore_an_already_active_product_returns_409(
+    client, auth_headers, make_product
+):
     product = make_product()
 
     response = client.post(f"/products/{product['id']}/restore", headers=auth_headers)

@@ -1,8 +1,7 @@
 import sqlite3
 
-from app.schemas.product import ProductCreate, ProductUpdate
 from app.exceptions import ConflictError, NotFoundError
-
+from app.schemas.product import ProductCreate, ProductUpdate
 
 
 def list_products(
@@ -69,7 +68,7 @@ def list_products(
     total = db.execute(count_sql, values).fetchone()[0]
     total_pages = (total + page_size - 1) // page_size
     sql = (
-               "SELECT id, sku, name, category_id, price, stock_quantity, "
+        "SELECT id, sku, name, category_id, price, stock_quantity, "
         "reorder_level, is_active "
         "FROM products WHERE "
         + where
@@ -219,7 +218,9 @@ def update_product(
     if "category_id" in update_data and not category_exists(
         db, update_data["category_id"]
     ):
-        raise NotFoundError(f"Category with id {update_data['category_id']} does not exist")
+        raise NotFoundError(
+            f"Category with id {update_data['category_id']} does not exist"
+        )
 
     if "price" in update_data:
         update_data["price"] = int(update_data["price"] * 100)
