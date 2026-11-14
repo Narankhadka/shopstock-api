@@ -10,7 +10,7 @@ router = APIRouter(prefix="/reports", tags=["Reports"])
 @router.get("/inventory-summary", response_model=InventorySummaryOut)
 def get_inventory_summary(
     db: DBSession,
-    threshold: int = Query(default=5, ge=0),
+    threshold: int | None = Query(default=None, ge=0),
 ):
     return report_service.get_inventory_summary(
         db=db,

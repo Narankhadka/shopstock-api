@@ -8,9 +8,9 @@ def paisa_to_rupees(paisa: int) -> Decimal:
 
 def get_inventory_summary(
     db: sqlite3.Connection,
-    threshold: int = 5,
+    threshold: int | None = None,
 ) -> dict:
-    if threshold < 0:
+    if threshold is not None and threshold < 0:
         raise ValueError("threshold must be non-negative")
 
     summary = db.execute(
@@ -39,7 +39,7 @@ def get_inventory_summary(
         FROM products AS p
         JOIN categories AS c ON c.id = p.category_id
         WHERE p.is_active = 1
-          AND p.stock_quantity < ?
+        AND p.stock_quantity < COALESCE(?, p.reorder_level)
         ORDER BY p.stock_quantity ASC, p.id ASC
         """,
         (threshold,),
