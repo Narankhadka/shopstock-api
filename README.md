@@ -152,3 +152,18 @@ sqlite3 shopstock.db "SELECT version, applied_at FROM schema_migrations;"
 
 A fresh database made from `sql/schema.sql` already has the column and the record. Copy
 the database file before migrating one you care about.
+
+## Code structure notes
+
+Several service functions are longer than 40 lines. The reasons are:
+
+- `create_order`, `update_order_status` and `adjust_stock` each run one database
+  transaction (`BEGIN IMMEDIATE` through `commit` or `rollback`). Splitting them would
+  move part of the transaction into other functions and make the rollback harder to
+  follow. The stock protection against overselling depends on this being in one place.
+- `list_products`, `get_order_by_id`, `get_inventory_summary` and similar functions are
+  long mostly because of SQL strings and the dictionaries built from rows. They hold
+  little branching logic.
+
+`list_orders` was split into small helpers (`_build_order_filters`, `_order_summary`) as
+an example of the same pattern.
