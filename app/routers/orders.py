@@ -21,6 +21,16 @@ router = APIRouter(prefix="/orders", tags=["Orders"])
     "",
     response_model=OrderOut,
     status_code=201,
+    summary="Create a new order",
+    responses={
+        401: {"description": "Missing or invalid API key"},
+        404: {"description": "One or more products not found"},
+        409: {
+            "description": "Insufficient stock or order conflicts with existing data"
+        },
+        422: {"description": "Invalid order data"},
+        500: {"description": "Internal server error"},
+    },
     dependencies=[Depends(require_api_key)],
 )
 def create_order(
@@ -30,12 +40,29 @@ def create_order(
     return order_service.create_order(db, data)
 
 
-@router.get("/{order_id}", response_model=OrderDetailOut)
+@router.get(
+    "/{order_id}",
+    response_model=OrderDetailOut,
+    summary="Get order details by ID",
+    responses={
+        404: {"description": "Order not found"},
+        422: {"description": "Invalid order ID"},
+        500: {"description": "Internal server error"},
+    },
+)
 def get_order_by_id(db: DBSession, order_id: int = Path(gt=0, le=2**31 - 1)):
     return order_service.get_order_by_id(db, order_id)
 
 
-@router.get("", response_model=PaginatedOrdersOut)
+@router.get(
+    "",
+    response_model=PaginatedOrdersOut,
+    summary="List orders with filters and pagination",
+    responses={
+        422: {"description": "Invalid filters or pagination parameters"},
+        500: {"description": "Internal server error"},
+    },
+)
 def list_orders(
     db: DBSession,
     status: Literal["pending", "confirmed", "delivered", "cancelled"] | None = None,
@@ -64,6 +91,14 @@ def list_orders(
     "/{order_id}/status",
     response_model=OrderDetailOut,
     status_code=200,
+    summary="Update order status",
+    responses={
+        401: {"description": "Missing or invalid API key"},
+        404: {"description": "Order not found"},
+        409: {"description": "Invalid order status transition"},
+        422: {"description": "Invalid order ID or status data"},
+        500: {"description": "Internal server error"},
+    },
     dependencies=[Depends(require_api_key)],
 )
 def update_order_status(
