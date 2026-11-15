@@ -10,7 +10,14 @@ from app.services import category_service
 router = APIRouter(prefix="/categories", tags=["categories"])
 
 
-@router.get("", response_model=list[CategoryOut])
+@router.get(
+    "",
+    response_model=list[CategoryOut],
+    summary="List all product categories",
+    responses={
+        500: {"description": "Internal server error"},
+    },
+)
 def get_categories(
     db: Annotated[sqlite3.Connection, Depends(get_db)],
 ):
