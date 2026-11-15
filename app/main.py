@@ -24,7 +24,15 @@ logging.basicConfig(
     format="%(asctime)s %(levelname)s %(name)s: %(message)s",
 )
 request_logger = logging.getLogger("shopstock.requests")
-app = FastAPI(title="ShopStock API")
+app = FastAPI(
+    title="ShopStock API",
+    description=(
+        "A RESTful inventory and order management API built with FastAPI. "
+        "Supports product management, stock adjustments, order processing, "
+        "and inventory reporting."
+    ),
+    version="1.0.0",
+)
 app.add_exception_handler(AppException, app_exception_handler)  # type: ignore[arg-type]
 app.add_exception_handler(StarletteHTTPException, http_exception_handler)  # type: ignore[arg-type]
 app.add_exception_handler(RequestValidationError, validation_exception_handler)  # type: ignore[arg-type]
@@ -63,7 +71,15 @@ app.include_router(orders.router)
 app.include_router(reports.router)
 
 
-@app.get("/health")
+@app.get(
+    "/health",
+    summary="Check API and database health",
+    tags=["Health"],
+    responses={
+        200: {"description": "API and database are healthy"},
+        503: {"description": "Database is unavailable"},
+    },
+)
 def health(db: Annotated[sqlite3.Connection, Depends(get_db)]):
     try:
         db.execute("SELECT * FROM products LIMIT 1")
