@@ -407,3 +407,65 @@ def test_write_endpoint_with_wrong_api_key_returns_403(client, default_category_
 
     assert response.status_code == 403
     assert response.json()["error"]["code"] == "FORBIDDEN"
+
+
+# ---------- Bugs found during the bug hunt (Task 3.7) ----------
+
+
+@pytest.mark.parametrize(
+    "url",
+    [
+        "/products?page=99999999999999999999",
+        "/products?category_id=99999999999999999999",
+        "/products/99999999999999999999",
+        "/products/99999999999999999999/stock-movements",
+        "/orders/99999999999999999999",
+        "/orders?page=99999999999999999999",
+    ],
+)
+def test_huge_number_in_url_returns_422_not_500(client, url):
+    response = client.get(url)
+
+    assert response.status_code == 422
+    assert response.json()["error"]["code"] == "VALIDATION_ERROR"
+
+
+@pytest.mark.parametrize("field", ["stock_quantity", "category_id"])
+def test_create_product_with_huge_number_returns_422_not_500(
+    client, auth_headers, default_category_id, field
+):
+    payload = product_payload(default_category_id)
+    payload[field] = 10**30
+
+    response = client.post("/products", headers=auth_headers, json=payload)
+
+    assert response.status_code == 422
+
+
+def test_stock_adjustment_with_huge_change_returns_422_not_500(
+    client, auth_headers, make_product
+):
+    product = make_product(stock_quantity=10)
+
+    response = client.post(
+        f"/products/{product['id']}/stock-adjustments",
+        headers=auth_headers,
+        json={"change": 2**63, "reason": "restock"},
+    )
+
+    assert response.status_code == 422
+    assert client.get(f"/products/{product['id']}").json()["stock_quantity"] == 10
+
+
+@pytest.mark.parametrize("name", ["a\nb", "tab\there", "bell\x07name"])
+def test_create_product_with_control_character_in_name_returns_422(
+    client, auth_headers, default_category_id, name
+):
+    response = client.post(
+        "/products",
+        headers=auth_headers,
+        json=product_payload(default_category_id, name=name),
+    )
+
+    assert response.status_code == 422
+    assert client.get("/products").json()["total"] == 0
