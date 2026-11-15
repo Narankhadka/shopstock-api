@@ -23,7 +23,17 @@ from app.services import product_service, stock_service
 router = APIRouter(prefix="/products", tags=["products"])
 
 
-@router.get("", response_model=PaginatedProductsOut)
+@router.get(
+    "",
+    response_model=PaginatedProductsOut,
+    summary="List products",
+    responses={
+        422: {
+            "description": "Invalid query parameters or min_price is greater than max_price"
+        },
+        500: {"description": "Internal server error"},
+    },
+)
 def get_products(
     db: Annotated[sqlite3.Connection, Depends(get_db)],
     category_id: int | None = Query(default=None, ge=0, le=2**31 - 1),
@@ -58,7 +68,16 @@ def get_products(
     )
 
 
-@router.get("/{product_id}", response_model=ProductDetailOut)
+@router.get(
+    "/{product_id}",
+    response_model=ProductDetailOut,
+    summary="Get product by ID",
+    responses={
+        404: {"description": "Product not found"},
+        422: {"description": "Invalid product ID"},
+        500: {"description": "Internal server error"},
+    },
+)
 def get_product(
     db: Annotated[sqlite3.Connection, Depends(get_db)],
     product_id: int = Path(gt=0, le=2**31 - 1),
@@ -69,7 +88,16 @@ def get_product(
     return product
 
 
-@router.get("/sku/{sku}", response_model=ProductDetailOut)
+@router.get(
+    "/sku/{sku}",
+    response_model=ProductDetailOut,
+    summary="Get product by SKU",
+    responses={
+        404: {"description": "Product with the specified SKU not found"},
+        422: {"description": "Invalid SKU format"},
+        500: {"description": "Internal server error"},
+    },
+)
 def get_product_sku(
     db: Annotated[sqlite3.Connection, Depends(get_db)],
     sku: str = Path(pattern=r"^[A-Za-z]{3}-[0-9]{4}$"),
@@ -86,6 +114,14 @@ def get_product_sku(
     "",
     response_model=ProductCreatedOut,
     status_code=201,
+    summary="Create a new product",
+    responses={
+        401: {"description": "Missing or invalid API key"},
+        404: {"description": "Product category not found"},
+        409: {"description": "Product with this SKU already exists"},
+        422: {"description": "Invalid product data"},
+        500: {"description": "Internal server error"},
+    },
     dependencies=[Depends(require_api_key)],
 )
 def create_product(
@@ -99,6 +135,14 @@ def create_product(
     "/{product_id}",
     response_model=ProductDetailOut,
     status_code=200,
+    summary="Update an existing product",
+    responses={
+        401: {"description": "Missing or invalid API key"},
+        404: {"description": "Product or category not found"},
+        409: {"description": "Updated SKU conflicts with an existing product"},
+        422: {"description": "Invalid product ID or update data"},
+        500: {"description": "Internal server error"},
+    },
     dependencies=[Depends(require_api_key)],
 )
 def update_product(
@@ -113,6 +157,14 @@ def update_product(
     "/{product_id}/stock-adjustments",
     response_model=StockAdjustmentOut,
     status_code=201,
+    summary="Adjust product stock",
+    responses={
+        401: {"description": "Missing or invalid API key"},
+        404: {"description": "Product not found"},
+        409: {"description": "Stock adjustment conflicts with available stock"},
+        422: {"description": "Invalid product ID or adjustment data"},
+        500: {"description": "Internal server error"},
+    },
     dependencies=[Depends(require_api_key)],
 )
 def create_stock_adjustment(
@@ -126,6 +178,12 @@ def create_stock_adjustment(
 @router.get(
     "/{product_id}/stock-movements",
     response_model=PaginatedStockMovementsOut,
+    summary="List product stock movements",
+    responses={
+        404: {"description": "Product not found"},
+        422: {"description": "Invalid product ID or pagination parameters"},
+        500: {"description": "Internal server error"},
+    },
 )
 def get_stock_movements(
     db: DBSession,
@@ -139,6 +197,13 @@ def get_stock_movements(
 @router.delete(
     "/{product_id}",
     status_code=204,
+    summary="Deactivate a product",
+    responses={
+        401: {"description": "Missing or invalid API key"},
+        404: {"description": "Product not found"},
+        422: {"description": "Invalid product ID"},
+        500: {"description": "Internal server error"},
+    },
     dependencies=[Depends(require_api_key)],
 )
 def deactivate_product(
@@ -151,6 +216,13 @@ def deactivate_product(
 @router.post(
     "/{product_id}/restore",
     status_code=204,
+    summary="Restore a deactivated product",
+    responses={
+        401: {"description": "Missing or invalid API key"},
+        404: {"description": "Product not found"},
+        422: {"description": "Invalid product ID"},
+        500: {"description": "Internal server error"},
+    },
     dependencies=[Depends(require_api_key)],
 )
 def restore_product(
