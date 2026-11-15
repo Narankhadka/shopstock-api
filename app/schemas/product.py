@@ -7,7 +7,7 @@ from pydantic import BaseModel, BeforeValidator, ConfigDict, Field, model_valida
 
 def trim_name(value: object) -> object:
     if isinstance(value, str):
-        return value.strip()
+        value = value.strip()
         if any(ord(ch) < 32 for ch in value):
             raise ValueError("name must not contain control characters")
     return value
