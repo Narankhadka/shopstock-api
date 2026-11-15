@@ -232,6 +232,57 @@ def get_order_by_id(
     }
 
 
+_ORDER_LIST_SQL = """
+    SELECT o.id, o.customer_name, o.customer_phone, o.status, o.total_amount,
+           COUNT(oi.id) AS item_count, o.created_at
+    FROM orders AS o
+    LEFT JOIN order_items AS oi ON oi.order_id = o.id
+    {where}
+    GROUP BY o.id
+    ORDER BY o.created_at DESC, o.id DESC
+    LIMIT ? OFFSET ?
+"""
+
+
+def _build_order_filters(
+    status: str | None,
+    customer_phone: str | None,
+    date_from: str | None,
+    date_to: str | None,
+) -> tuple[str, list]:
+    """Return a WHERE clause made only of fixed text, plus its ? values."""
+    conditions: list[str] = []
+    params: list = []
+
+    if status is not None:
+        conditions.append("o.status = ?")
+        params.append(status)
+    if customer_phone is not None:
+        conditions.append("o.customer_phone = ?")
+        params.append(customer_phone)
+    if date_from is not None:
+        conditions.append("date(o.created_at) >= ?")
+        params.append(date_from)
+    if date_to is not None:
+        conditions.append("date(o.created_at) <= ?")
+        params.append(date_to)
+
+    where = (" WHERE " + " AND ".join(conditions)) if conditions else ""
+    return where, params
+
+
+def _order_summary(row: sqlite3.Row) -> dict:
+    return {
+        "id": row["id"],
+        "customer_name": row["customer_name"],
+        "customer_phone": row["customer_phone"],
+        "status": row["status"],
+        "total_amount": row["total_amount"] / 100,
+        "item_count": row["item_count"],
+        "created_at": row["created_at"],
+    }
+
+
 def list_orders(
     db: sqlite3.Connection,
     status: str | None = None,
@@ -241,72 +292,18 @@ def list_orders(
     page: int = 1,
     page_size: int = 10,
 ) -> dict:
-    conditions = []
-    params = []
+    where, params = _build_order_filters(status, customer_phone, date_from, date_to)
 
-    if status is not None:
-        conditions.append("o.status = ?")
-        params.append(status)
-    if customer_phone is not None:
-        conditions.append("o.customer_phone = ?")
-        params.append(customer_phone)
-
-    if date_from is not None:
-        conditions.append("date(o.created_at) >= ?")
-        params.append(date_from)
-
-    if date_to is not None:
-        conditions.append("date(o.created_at) <= ?")
-        params.append(date_to)
-
-    where_clause = " AND ".join(conditions)
-
-    if where_clause:
-        where_clause = " WHERE " + where_clause
-    total = db.execute(
-        f"""
-    SELECT COUNT(*)
-    FROM orders AS o
-    {where_clause}
-    """,
-        params,
-    ).fetchone()[0]
-
-    offset = (page - 1) * page_size
+    total = db.execute(f"SELECT COUNT(*) FROM orders AS o{where}", params).fetchone()[0]
     total_pages = (total + page_size - 1) // page_size
 
+    offset = (page - 1) * page_size
     rows = db.execute(
-        f"""
-    SELECT
-        o.id,
-        o.customer_name,
-        o.customer_phone,
-        o.status,
-        o.total_amount,
-        COUNT(oi.id) AS item_count,
-        o.created_at
-    FROM orders AS o
-    LEFT JOIN order_items AS oi ON oi.order_id = o.id
-    {where_clause}
-    GROUP BY o.id
-    ORDER BY o.created_at DESC, o.id DESC
-    LIMIT ? OFFSET ?
-    """,
-        (*params, page_size, offset),
+        _ORDER_LIST_SQL.format(where=where), (*params, page_size, offset)
     ).fetchall()
+
     return {
-        "items": [
-            {
-                "id": row["id"],
-                "customer_name": row["customer_name"],
-                "customer_phone": row["customer_phone"],
-                "status": row["status"],
-                "total_amount": row["total_amount"] / 100,
-                "item_count": row["item_count"],
-                "created_at": row["created_at"],
-            }
-            for row in rows
-        ],
+        "items": [_order_summary(row) for row in rows],
         "total": total,
         "page": page,
         "page_size": page_size,
