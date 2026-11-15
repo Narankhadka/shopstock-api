@@ -7,7 +7,15 @@ from app.services import report_service
 router = APIRouter(prefix="/reports", tags=["Reports"])
 
 
-@router.get("/inventory-summary", response_model=InventorySummaryOut)
+@router.get(
+    "/inventory-summary",
+    response_model=InventorySummaryOut,
+    summary="Get inventory summary report",
+    responses={
+        422: {"description": "Invalid threshold value"},
+        500: {"description": "Internal server error"},
+    },
+)
 def get_inventory_summary(
     db: DBSession,
     threshold: int | None = Query(default=None, ge=0),
