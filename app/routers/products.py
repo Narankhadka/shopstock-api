@@ -26,7 +26,7 @@ router = APIRouter(prefix="/products", tags=["products"])
 @router.get("", response_model=PaginatedProductsOut)
 def get_products(
     db: Annotated[sqlite3.Connection, Depends(get_db)],
-    category_id: int | None = Query(default=None, ge=0),
+    category_id: int | None = Query(default=None, ge=0, le=2**31 - 1),
     min_price: float | None = Query(default=None, ge=0),
     max_price: float | None = Query(default=None, ge=0),
     in_stock: bool | None = None,
@@ -34,7 +34,7 @@ def get_products(
     include_inactive: bool = False,
     sort_by: Literal["price", "name", "stock_quantity", "created_at"] = "name",
     order: Literal["asc", "desc"] = "asc",
-    page: int = Query(default=1, ge=1),
+    page: int = Query(default=1, ge=1, le=1_000_000),
     page_size: int = Query(default=10, ge=1, le=50),
 ):
 
@@ -59,7 +59,10 @@ def get_products(
 
 
 @router.get("/{product_id}", response_model=ProductDetailOut)
-def get_product(product_id: int, db: Annotated[sqlite3.Connection, Depends(get_db)]):
+def get_product(
+    db: Annotated[sqlite3.Connection, Depends(get_db)],
+    product_id: int = Path(gt=0, le=2**31 - 1),
+):
     product = product_service.get_product_by_id(db, product_id)
     if product is None:
         raise NotFoundError(f"Product with id {product_id} not found")
@@ -99,9 +102,9 @@ def create_product(
     dependencies=[Depends(require_api_key)],
 )
 def update_product(
-    product_id: int,
     data: ProductUpdate,
     db: DBSession,
+    product_id: int = Path(gt=0, le=2**31 - 1),
 ):
     return product_service.update_product(db, product_id, data)
 
@@ -112,7 +115,11 @@ def update_product(
     status_code=201,
     dependencies=[Depends(require_api_key)],
 )
-def create_stock_adjustment(product_id: int, data: StockAdjustmentIn, db: DBSession):
+def create_stock_adjustment(
+    data: StockAdjustmentIn,
+    db: DBSession,
+    product_id: int = Path(gt=0, le=2**31 - 1),
+):
     return stock_service.adjust_stock(db, product_id, data)
 
 
@@ -121,9 +128,9 @@ def create_stock_adjustment(product_id: int, data: StockAdjustmentIn, db: DBSess
     response_model=PaginatedStockMovementsOut,
 )
 def get_stock_movements(
-    product_id: int,
     db: DBSession,
-    page: int = Query(default=1, ge=1),
+    product_id: int = Path(gt=0, le=2**31 - 1),
+    page: int = Query(default=1, ge=1, le=1_000_000),
     page_size: int = Query(default=10, ge=1, le=50),
 ):
     return stock_service.list_stock_movements(db, product_id, page, page_size)
@@ -136,7 +143,7 @@ def get_stock_movements(
 )
 def deactivate_product(
     db: DBSession,
-    product_id: int = Path(gt=0),
+    product_id: int = Path(gt=0, le=2**31 - 1),
 ) -> None:
     product_service.deactivate_product(db, product_id)
 
@@ -148,6 +155,6 @@ def deactivate_product(
 )
 def restore_product(
     db: DBSession,
-    product_id: int = Path(gt=0),
+    product_id: int = Path(gt=0, le=2**31 - 1),
 ) -> None:
     product_service.restore_product(db, product_id)

@@ -5,7 +5,7 @@ from pydantic import BaseModel, Field, field_validator
 
 
 class StockAdjustmentIn(BaseModel):
-    change: Annotated[int, Field(strict=True)]
+    change: Annotated[int, Field(strict=True, ge=-1_000_000_000, le=1_000_000_000)]
     reason: Literal["restock", "damaged", "correction"]
 
     @field_validator("change")

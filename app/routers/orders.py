@@ -31,7 +31,7 @@ def create_order(
 
 
 @router.get("/{order_id}", response_model=OrderDetailOut)
-def get_order_by_id(db: DBSession, order_id: int = Path(gt=0)):
+def get_order_by_id(db: DBSession, order_id: int = Path(gt=0, le=2**31 - 1)):
     return order_service.get_order_by_id(db, order_id)
 
 
@@ -42,7 +42,7 @@ def list_orders(
     customer_phone: str | None = None,
     date_from: date | None = None,
     date_to: date | None = None,
-    page: int = Query(default=1, ge=1),
+    page: int = Query(default=1, ge=1, le=1_000_000),
     page_size: int = Query(default=10, ge=1, le=50),
 ):
     if date_from is not None and date_to is not None and date_from > date_to:
@@ -69,6 +69,6 @@ def list_orders(
 def update_order_status(
     data: OrderStatusUpdate,
     db: DBSession,
-    order_id: int = Path(gt=0),
+    order_id: int = Path(gt=0, le=2**31 - 1),
 ):
     return order_service.update_order_status(db=db, order_id=order_id, data=data)

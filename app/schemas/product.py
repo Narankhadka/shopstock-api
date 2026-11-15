@@ -15,7 +15,7 @@ ProductName = Annotated[
     str, BeforeValidator(trim_name), Field(min_length=2, max_length=100)
 ]
 ProductPrice = Annotated[Decimal, Field(gt=0, le=1000000, decimal_places=2)]
-ProductCategoryId = Annotated[int, Field(gt=0, strict=True)]
+ProductCategoryId = Annotated[int, Field(gt=0, le=2**31 - 1, strict=True)]
 ReorderLevel = Annotated[int, Field(ge=0, le=1000000, strict=True)]
 
 
@@ -39,7 +39,7 @@ class ProductCreate(BaseModel):
     name: ProductName
     category_id: ProductCategoryId
     price: ProductPrice
-    stock_quantity: Annotated[int, Field(ge=0, strict=True)]
+    stock_quantity: Annotated[int, Field(ge=0, le=1_000_000_000, strict=True)]
     reorder_level: ReorderLevel = 5
 
 
